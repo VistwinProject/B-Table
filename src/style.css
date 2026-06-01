@@ -1,0 +1,305 @@
+/* ── Design tokens (shared with F-region / vibenfc) ──────────────────────────── */
+:root {
+  --accent:      #009393;
+  --accent-2:    #4dbaba;
+  --accent-deep: #006a6a;
+  --accent-glow: rgba(0, 147, 147, 0.30);
+
+  --c-bg:       #02090b;
+  --c-text:     #eef3f3;
+  --c-text-dim: #8aa2a2;
+
+  --font-cjk:     'Chiron Hei HK', 'Space Grotesk', sans-serif;
+  --font-display: 'Space Grotesk', 'Chiron Hei HK', sans-serif;
+  --font-hud:     'JetBrains Mono', monospace;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* per-scene accent, set inline by App; falls back to brand teal */
+  --scene-accent: var(--accent);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root { width: 100%; height: 100%; }
+
+body {
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-cjk);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: none; /* projection surface — no pointer */
+}
+
+/* ── Stage (full projection surface) ─────────────────────────────────────────── */
+.stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 60% 60% at 50% 46%,
+      color-mix(in srgb, var(--scene-accent) 26%, transparent) 0%,
+      color-mix(in srgb, var(--scene-accent) 8%, transparent) 42%,
+      transparent 72%),
+    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 48%, rgba(0,0,0,0.7) 100%),
+    var(--c-bg);
+  transition: background 0.8s var(--ease);
+}
+
+.stage__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 80%);
+}
+
+/* ── Screen crossfade layers ─────────────────────────────────────────────────── */
+/* Every screen is always mounted; exactly one carries --active. Visibility is a
+   pure class toggle (deterministic, no animation-library dependency); only the
+   fade itself is a CSS transition. */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.55s var(--ease);
+}
+.screen--active { opacity: 1; }
+
+/* ── Shared prompt / scene layout ────────────────────────────────────────────── */
+/* The sensor ring is the anchor: it sits at the exact centre of the screen (=
+   viewport centre = confirm-ripple centre), and stays put across every state so
+   the projected ring lines up with the physical reader. Eyebrow and text are
+   absolutely positioned above/below the ring, so their length never shifts it. */
+.prompt, .scene {
+  position: relative;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.prompt__eyebrow, .scene__status {
+  position: absolute;
+  bottom: calc(100% + clamp(24px, 4vh, 52px));
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: var(--font-hud);
+  font-size: clamp(13px, 1.6vh, 18px);
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  color: var(--c-text-dim);
+  text-transform: uppercase;
+}
+
+.scene__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: color-mix(in srgb, var(--scene-accent) 70%, #fff);
+}
+.scene__dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--scene-accent);
+  box-shadow: 0 0 12px var(--scene-accent);
+  animation: blink 1.4s var(--ease) infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+.prompt__text, .scene__text {
+  position: absolute;
+  top: calc(100% + clamp(28px, 5vh, 60px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(8px, 1.4vh, 16px);
+  width: max-content;
+  max-width: 90vw;
+}
+
+.prompt__title, .scene__title {
+  font-weight: 700;
+  font-size: clamp(28px, 4.6vh, 52px);
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+}
+.prompt__sub, .scene__line {
+  font-size: clamp(15px, 2vh, 22px);
+  color: var(--c-text-dim);
+  letter-spacing: 0.04em;
+  max-width: 30ch;
+}
+.scene__line { color: color-mix(in srgb, var(--scene-accent) 40%, var(--c-text)); }
+
+.scene__hint {
+  margin-top: clamp(6px, 1.2vh, 14px);
+  font-family: var(--font-hud);
+  font-size: clamp(12px, 1.5vh, 16px);
+  letter-spacing: 0.18em;
+  color: var(--c-text-dim);
+  opacity: 0.85;
+}
+
+/* ── Sensor ring (the physical placement target) ─────────────────────────────── */
+.sensor {
+  --d: clamp(220px, 34vh, 360px);
+  position: relative;
+  width: var(--d);
+  height: var(--d);
+  display: grid;
+  place-items: center;
+}
+.sensor > * { grid-area: 1 / 1; }
+
+.sensor__pulse {
+  width: var(--d); height: var(--d);
+  border-radius: 50%;
+  border: 2px solid var(--ring-accent, var(--accent));
+  opacity: 0;
+  animation: sensor-pulse 2.6s ease-out infinite;
+}
+.sensor__pulse:nth-of-type(2) { animation-delay: 0.86s; }
+.sensor__pulse:nth-of-type(3) { animation-delay: 1.72s; }
+@keyframes sensor-pulse {
+  0%   { transform: scale(0.55); opacity: 0.55; }
+  100% { transform: scale(1.5);  opacity: 0; }
+}
+
+.sensor__ring {
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--ring-accent, var(--accent)) 55%, transparent);
+}
+.sensor__ring--outer {
+  width: var(--d); height: var(--d);
+  box-shadow:
+    0 0 60px color-mix(in srgb, var(--ring-accent, var(--accent)) 30%, transparent),
+    inset 0 0 50px color-mix(in srgb, var(--ring-accent, var(--accent)) 14%, transparent);
+}
+.sensor__ring--inner {
+  width: calc(var(--d) * 0.6);
+  height: calc(var(--d) * 0.6);
+  border-color: color-mix(in srgb, var(--ring-accent, var(--accent)) 75%, transparent);
+}
+
+/* rotating conic sweep — the "scanning" motion */
+.sensor__sweep {
+  width: calc(var(--d) * 0.92);
+  height: calc(var(--d) * 0.92);
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    color-mix(in srgb, var(--ring-accent, var(--accent)) 42%, transparent) 60deg,
+    transparent 120deg,
+    transparent 360deg);
+  mask: radial-gradient(circle, transparent 38%, #000 39%, #000 49%, transparent 50%);
+  -webkit-mask: radial-gradient(circle, transparent 38%, #000 39%, #000 49%, transparent 50%);
+  animation: sensor-sweep 4s linear infinite;
+}
+@keyframes sensor-sweep { to { transform: rotate(360deg); } }
+
+.sensor__core {
+  width: calc(var(--d) * 0.6);
+  height: calc(var(--d) * 0.6);
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--ring-accent, var(--accent)) 22%, transparent) 0%,
+    transparent 70%);
+}
+
+.sensor__icon {
+  width: calc(var(--d) * 0.3);
+  height: calc(var(--d) * 0.3);
+  color: color-mix(in srgb, var(--ring-accent, var(--accent)) 50%, #fff);
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--ring-accent, var(--accent)) 60%, transparent));
+}
+.prompt__glyph { width: 100%; height: 100%; }
+
+.scene__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(24px, 3.6vh, 40px);
+  letter-spacing: 0.08em;
+  color: #fff;
+  text-shadow: 0 0 24px var(--scene-accent);
+}
+
+/* ── Confirm ripple ──────────────────────────────────────────────────────────── */
+.confirm {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 5;
+}
+.confirm__ring {
+  position: absolute;
+  width: clamp(220px, 34vh, 360px);
+  height: clamp(220px, 34vh, 360px);
+  border-radius: 50%;
+  border: 2.5px solid var(--confirm-accent);
+  box-shadow: 0 0 40px var(--confirm-accent);
+  opacity: 0;
+  animation: confirm-ring 1s ease-out forwards;
+}
+.confirm__ring--2 { animation-delay: 0.12s; }
+@keyframes confirm-ring {
+  0%   { transform: scale(0.4); opacity: 0.8; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+.confirm__check {
+  position: absolute;
+  width: clamp(70px, 11vh, 110px);
+  height: clamp(70px, 11vh, 110px);
+  color: var(--confirm-accent);
+  filter: drop-shadow(0 0 16px var(--confirm-accent));
+  transform: scale(0);
+  animation: confirm-check 1.4s ease-out forwards;
+}
+.confirm__check svg { width: 100%; height: 100%; }
+@keyframes confirm-check {
+  0%   { transform: scale(0);    opacity: 0; }
+  25%  { transform: scale(1.15); opacity: 1; }
+  50%  { transform: scale(1);    opacity: 1; }
+  100% { transform: scale(1);    opacity: 0; }
+}
+
+/* ── Ops status dot ──────────────────────────────────────────────────────────── */
+.statusdot {
+  position: absolute;
+  bottom: 18px;
+  right: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--c-text-dim);
+  opacity: 0.5;
+  z-index: 10;
+}
+.statusdot__led {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: currentColor;
+}
+.statusdot--live  { color: var(--accent-2); }
+.statusdot--idle  { color: #f59e0b; }
+.statusdot--down  { color: #f43f5e; }
+.statusdot--live .statusdot__led { box-shadow: 0 0 8px currentColor; }
