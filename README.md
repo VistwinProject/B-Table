@@ -56,7 +56,21 @@
 
 > ⚠️ B 區的 NFC server 必須跑在 **8788**(F 的 server 占用 8787)。
 
-## 快速開始
+## 一鍵啟動(展覽 / 換電腦用)
+
+**雙擊 `start.bat`** — 自動檢查環境、裝相依、建置、開 NFC server(8788)+ 網頁(5273),並用 Chrome 全螢幕開啟畫面。要停就雙擊 `stop.bat`(或關掉那兩個黑視窗)。
+
+換到新電腦只要先裝好兩個東西,其餘 `start.bat` 會自己處理:
+
+| 前置需求 | 下載 | 備註 |
+|---|---|---|
+| **Node.js 18+** | https://nodejs.org | `start.bat` 找不到會提示;若裝在非標準路徑,改 bat 裡的 `C:\nvm4w\nodejs` |
+| **Python 3.11+** | https://python.org | 安裝時勾「Add to PATH」 |
+| (實體刷卡才需要)ACR122U 讀卡機 | — | 沒插也能跑,只是不能實體刷卡;鍵盤模擬照常 |
+
+> `start.bat` 每次啟動都會重新 `npm run build`(此 app 很小,約 1 秒),確保跑到最新程式。
+
+## 開發模式
 
 需要 Node 18+。
 
