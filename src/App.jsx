@@ -124,15 +124,23 @@ export default function App() {
 
   // ── Dev simulator (no hardware needed) ────────────────────────────────────────
   //   c = scan invite card | 1-5 = scan persona keyring | space/x = lift | r = reset
+  //   把模擬事件「ws.send 進 8788 server」→ server 廣播給所有 client(桌面 + 電視同步)。
+  //   未連線時 fallback 成本機 ingest(純桌面測試)。需 server 端有 dev 注入(放行
+  //   tag-present/tag-remove/reset 並原樣 broadcast)。
   useEffect(() => {
+    const relay = (msg) => {
+      const ws = wsRef.current
+      if (ws && ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify(msg)) } catch { ingest(msg) } }
+      else ingest(msg)
+    }
     const onKey = (e) => {
-      if (e.key === 'c' || e.key === 'C') ingest({ type: 'tag-present', data: { id: 'invite', kind: 'card' } })
+      if (e.key === 'c' || e.key === 'C') relay({ type: 'tag-present', data: { id: 'invite', kind: 'card' } })
       else if (e.key >= '1' && e.key <= '5') {
         const id = PERSONA_ORDER[Number(e.key) - 1]
-        ingest({ type: 'tag-present', data: { id, kind: 'character' } })
+        relay({ type: 'tag-present', data: { id, kind: 'character' } })
       }
-      else if (e.key === ' ' || e.key === 'x' || e.key === 'X') ingest({ type: 'tag-remove' })
-      else if (e.key === 'r' || e.key === 'R' || e.key === 'Escape') ingest({ type: 'reset' })
+      else if (e.key === ' ' || e.key === 'x' || e.key === 'X') relay({ type: 'tag-remove' })
+      else if (e.key === 'r' || e.key === 'R' || e.key === 'Escape') relay({ type: 'reset' })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

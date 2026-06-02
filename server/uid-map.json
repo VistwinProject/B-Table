@@ -1,8 +1,8 @@
 {
-  "_comment": "B 區 UID → token. kind=card 為邀請卡(開場); kind=character 為角色鑰匙圈. UID 待真實 NTAG215 燒錄後替換. id 字串需與 src/personas.js 對齊.",
-  "04AA01AA01AA01": { "id": "invite", "kind": "card", "label": "邀請卡" },
-  "04BB01BB01BB01": { "id": "anti-aging", "kind": "character", "label": "生理逆齡" },
-  "04BB02BB02BB02": { "id": "child", "kind": "character", "label": "原生健康" },
+  "_comment": "B 區 UID → token. kind=card 為邀請卡(開場); kind=character 為角色鑰匙圈. id 字串需與 src/personas.js 對齊. 角色3/4/5 仍為 placeholder,待燒卡後填真實 UID.",
+  "04DA53A76F2681": { "id": "invite", "kind": "card", "label": "邀請卡" },
+  "B00C411E": { "id": "anti-aging", "kind": "character", "label": "生理逆齡" },
+  "4F54E53C": { "id": "child", "kind": "character", "label": "原生健康" },
   "04BB03BB03BB03": { "id": "elder", "kind": "character", "label": "安全守護" },
   "04BB04BB04BB04": { "id": "pregnancy", "kind": "character", "label": "極致純淨" },
   "04BB05BB05BB05": { "id": "nomad", "kind": "character", "label": "數位遊牧" }
