@@ -5,7 +5,8 @@
       "name": "table-guide",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 5176
+      "port": 5273,
+      "autoPort": false
     }
   ]
 }

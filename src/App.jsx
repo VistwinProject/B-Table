@@ -5,10 +5,13 @@ import SceneActive from './components/SceneActive.jsx'
 import ConfirmRipple from './components/ConfirmRipple.jsx'
 import StatusDot from './components/StatusDot.jsx'
 
-// Same WS contract as the F-region desktop (vibenfc) so the real NFC daemon can
+// Same WS contract as the F-region desktop (vibenfc), so B's NFC daemon can
 // drive this unchanged. B has a single reader (slot 0); card + 5 keyrings are
-// scanned sequentially on it. Override via VITE_WS_URL if the daemon is remote.
-const WS_URL       = import.meta.env.VITE_WS_URL || 'ws://localhost:8787'
+// scanned sequentially on it.
+// PORT IS FIXED TO 8788 — the exhibition shares one host, and F's server owns
+// 8787. B's NFC server MUST run on 8788 to avoid colliding with F. Override via
+// VITE_WS_URL only for special setups (e.g. a remote daemon).
+const WS_URL       = import.meta.env.VITE_WS_URL || 'ws://localhost:8788'
 const RECONNECT_MS = 3000
 const CONFIRM_MS   = 1800
 

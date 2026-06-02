@@ -33,7 +33,7 @@
 ## 架構
 
 ```
-[ 桌上 NFC Reader ] → [ NFC daemon / WS server :8787 ] → [ 本 App (桌面投影) ]
+[ 桌上 NFC Reader ] → [ NFC daemon / WS server :8788 ] → [ 本 App (桌面投影) ]
                                                        ↘ [ 牆上電視機 App (另一 repo) ]
 ```
 
@@ -43,26 +43,39 @@
 
 ---
 
+## 埠口(展覽同網域,固定不漂移)
+
+展覽現場所有 zone 共用同一台主機 / 網域,**埠口寫死且 `strictPort`**,被占就報錯、絕不自動漂移去撞別區。
+
+| Zone | App | Web | WS |
+|---|---|---|---|
+| F(既有) | 桌面 / 牆面 / 平板 | 5173 / 5174 / 5175 | 8787 |
+| **B** | **桌面投影(本 repo)** | **5273** | 連 **8788** |
+| B | TV display(另一 repo,待做) | 5274(預留) | 連 8788 |
+| B | NFC WS server | — | **8788** |
+
+> ⚠️ B 區的 NFC server 必須跑在 **8788**(F 的 server 占用 8787)。
+
 ## 快速開始
 
 需要 Node 18+。
 
 ```bash
 npm install
-npm run dev        # http://localhost:5174 (埠口被占會自動往後找)
+npm run dev        # http://localhost:5273 (固定;被占會直接報錯)
 ```
 
 production build:
 
 ```bash
 npm run build      # 輸出到 dist/
-npm run preview
+npm run preview    # 同樣固定 5273
 ```
 
-預設連線 `ws://localhost:8787`。若 NFC daemon 在別台機器,用環境變數覆蓋:
+預設連線 `ws://localhost:8788`(B 區 NFC server)。僅特殊情況(如遠端 daemon)才用環境變數覆蓋:
 
 ```bash
-VITE_WS_URL=ws://192.168.1.50:8787 npm run dev
+VITE_WS_URL=ws://192.168.1.50:8788 npm run dev
 ```
 
 ---
