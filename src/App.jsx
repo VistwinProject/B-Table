@@ -1,9 +1,10 @@
 import { useEffect, useReducer, useRef, useCallback } from 'react'
 import { PERSONAS, PERSONA_ORDER } from './personas.js'
-import PlacePrompt from './components/PlacePrompt.jsx'
-import SceneActive from './components/SceneActive.jsx'
+import SensorRing from './components/SensorRing.jsx'
+import RightPanel from './components/RightPanel.jsx'
 import ConfirmRipple from './components/ConfirmRipple.jsx'
 import StatusDot from './components/StatusDot.jsx'
+import { CardIcon, KeyringIcon } from './components/icons.jsx'
 
 // Same WS contract as the F-region desktop (vibenfc), so B's NFC daemon can
 // drive this unchanged. B has a single reader (slot 0); card + 5 keyrings are
@@ -149,29 +150,37 @@ export default function App() {
   const step    = deriveStep(state)
   const persona = state.character ? PERSONAS[state.character] : null
 
-  // Screens are always mounted and crossfaded via a CSS `is-active` class — no
-  // mount/unmount churn, no animation-library dependency for the critical
-  // visibility logic. Exactly one screen carries `screen--active` at a time.
+  // Two halves, no hard divider: LEFT = the NFC sensor target (the physical
+  // placement point — the confirm ripple lives here too, so it's always centred
+  // on the ring). RIGHT = the words. The sensor ring is persistent (its glyph /
+  // accent / pulse derive from step) so it never flickers and stays pinned for
+  // projection alignment to the real reader.
   return (
     <div className="stage" style={persona ? { '--scene-accent': persona.accent } : undefined}>
       <div className="stage__vignette" />
 
-      <div className={`screen${step === 'place-card' ? ' screen--active' : ''}`}>
-        <PlacePrompt kind="card" />
-      </div>
-      <div className={`screen${step === 'place-character' ? ' screen--active' : ''}`}>
-        <PlacePrompt kind="character" />
-      </div>
-      <div className={`screen${step === 'scene' ? ' screen--active' : ''}`}>
-        {persona && <SceneActive persona={persona} />}
-      </div>
+      <div className="panels">
+        <div className="panel panel--left">
+          <SensorRing accent={persona?.accent || 'var(--accent)'} pulse={step !== 'scene'}>
+            {step === 'scene' && persona
+              ? <span className="sensor-name">{persona.name}</span>
+              : step === 'place-character'
+                ? <KeyringIcon className="sensor-glyph" />
+                : <CardIcon className="sensor-glyph" />}
+          </SensorRing>
 
-      {state.confirm && (
-        <ConfirmRipple
-          key={state.confirm.seq}
-          accent={state.confirm.kind === 'character' ? PERSONAS[state.confirm.id]?.accent : null}
-        />
-      )}
+          {state.confirm && (
+            <ConfirmRipple
+              key={state.confirm.seq}
+              accent={state.confirm.kind === 'character' ? PERSONAS[state.confirm.id]?.accent : null}
+            />
+          )}
+        </div>
+
+        <div className="panel panel--right">
+          <RightPanel step={step} persona={persona} />
+        </div>
+      </div>
 
       <StatusDot wsStatus={state.wsStatus} connected={state.connected} />
     </div>

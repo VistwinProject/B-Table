@@ -42,11 +42,12 @@ body {
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(ellipse 60% 60% at 50% 46%,
-      color-mix(in srgb, var(--scene-accent) 26%, transparent) 0%,
-      color-mix(in srgb, var(--scene-accent) 8%, transparent) 42%,
+    /* primary glow follows the sensor ring into the LEFT half */
+    radial-gradient(ellipse 52% 66% at 24% 50%,
+      color-mix(in srgb, var(--scene-accent) 28%, transparent) 0%,
+      color-mix(in srgb, var(--scene-accent) 9%, transparent) 44%,
       transparent 72%),
-    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 48%, rgba(0,0,0,0.7) 100%),
+    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 46%, rgba(0,0,0,0.72) 100%),
     var(--c-bg);
   transition: background 0.8s var(--ease);
 }
@@ -62,95 +63,115 @@ body {
   mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 80%);
 }
 
-/* ── Screen crossfade layers ─────────────────────────────────────────────────── */
-/* Every screen is always mounted; exactly one carries --active. Visibility is a
-   pure class toggle (deterministic, no animation-library dependency); only the
-   fade itself is a CSS transition. */
-.screen {
+/* ── Two-panel layout (left = sensor, right = words; no hard divider) ─────────── */
+.panels {
   position: absolute;
   inset: 0;
+  display: flex;
+  align-items: stretch;
+}
+.panel { position: relative; height: 100%; }
+
+/* LEFT — the NFC sensor target + confirm ripple, centred in the half so the
+   projected ring (and its ripple) pin to the physical reader. */
+.panel--left {
+  flex: 0 0 46%;
   display: grid;
   place-items: center;
+}
+/* RIGHT — the words */
+.panel--right { flex: 1 1 54%; }
+
+/* glyph / persona name inside the ring */
+.sensor-glyph { width: 100%; height: 100%; }
+.sensor-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(22px, 3.4vh, 38px);
+  letter-spacing: 0.08em;
+  text-indent: 0.08em;   /* balance trailing letter-spacing → glyphs dead-centre */
+  white-space: nowrap;
+  color: #fff;
+  text-shadow: 0 0 24px var(--ring-accent, var(--accent));
+}
+
+/* ── Right panel: crossfading text blocks ────────────────────────────────────── */
+/* Content is centred WITHIN the right half (so it reads as balanced in its own
+   region, and sits further right than a seam-hugging left alignment). */
+.rpanel { position: absolute; inset: 0; }
+/* The block is centred (as a group) within the right half; the inner column is
+   left-aligned so every line shares one left edge (paragraph, not centred). */
+.rblock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;   /* centre the inner column horizontally in the half */
+  align-items: center;       /* and vertically */
+  padding: 6vh 6%;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.55s var(--ease);
+  transition: opacity 0.6s var(--ease);
 }
-.screen--active { opacity: 1; }
+.rblock--active { opacity: 1; }
 
-/* ── Shared prompt / scene layout ────────────────────────────────────────────── */
-/* The sensor ring is the anchor: it sits at the exact centre of the screen (=
-   viewport centre = confirm-ripple centre), and stays put across every state so
-   the projected ring lines up with the physical reader. Eyebrow and text are
-   absolutely positioned above/below the ring, so their length never shifts it. */
-.prompt, .scene {
-  position: relative;
-  display: grid;
-  place-items: center;
-  text-align: center;
-}
-
-.prompt__eyebrow, .scene__status {
-  position: absolute;
-  bottom: calc(100% + clamp(24px, 4vh, 52px));
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-family: var(--font-hud);
-  font-size: clamp(13px, 1.6vh, 18px);
-  letter-spacing: 0.42em;
-  text-indent: 0.42em;
-  color: var(--c-text-dim);
-  text-transform: uppercase;
-}
-
-.scene__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: color-mix(in srgb, var(--scene-accent) 70%, #fff);
-}
-.scene__dot {
-  width: 9px; height: 9px; border-radius: 50%;
-  background: var(--scene-accent);
-  box-shadow: 0 0 12px var(--scene-accent);
-  animation: blink 1.4s var(--ease) infinite;
-}
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
-
-.prompt__text, .scene__text {
-  position: absolute;
-  top: calc(100% + clamp(28px, 5vh, 60px));
-  left: 50%;
-  transform: translateX(-50%);
+.rblock__inner {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: clamp(8px, 1.4vh, 16px);
-  width: max-content;
-  max-width: 90vw;
+  align-items: flex-start;   /* shared left edge */
+  text-align: left;          /* multi-line left-aligned */
+  gap: clamp(16px, 3vh, 36px);
 }
 
-.prompt__title, .scene__title {
-  font-weight: 700;
-  font-size: clamp(28px, 4.6vh, 52px);
-  letter-spacing: 0.06em;
-  line-height: 1.15;
-}
-.prompt__sub, .scene__line {
-  font-size: clamp(15px, 2vh, 22px);
-  color: var(--c-text-dim);
-  letter-spacing: 0.04em;
-  max-width: 30ch;
-}
-.scene__line { color: color-mix(in srgb, var(--scene-accent) 40%, var(--c-text)); }
-
-.scene__hint {
-  margin-top: clamp(6px, 1.2vh, 14px);
+.rblock__eyebrow {
   font-family: var(--font-hud);
-  font-size: clamp(12px, 1.5vh, 16px);
-  letter-spacing: 0.18em;
+  font-size: clamp(14px, 1.9vh, 22px);
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+  text-transform: uppercase;
   color: var(--c-text-dim);
-  opacity: 0.85;
+}
+.rblock__title {
+  font-weight: 700;
+  font-size: clamp(40px, 7vh, 84px);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+.rblock__sub {
+  font-size: clamp(18px, 2.7vh, 32px);
+  line-height: 1.8;
+  letter-spacing: 0.03em;
+  color: var(--c-text-dim);
+  max-width: 22ch;
+}
+
+/* scene block — the emotional pain-point. Bigger, warmer, more air. */
+.rblock__role {
+  font-family: var(--font-hud);
+  font-size: clamp(14px, 1.9vh, 22px);
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  color: color-mix(in srgb, var(--scene-accent) 62%, var(--c-text-dim));
+}
+.rblock__q {
+  font-weight: 500;
+  font-size: clamp(34px, 6vh, 76px);
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  color: #f4f7f7;
+  max-width: 16ch;
+}
+.rblock__pain {
+  font-size: clamp(18px, 2.7vh, 32px);
+  line-height: 1.95;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--c-text) 64%, transparent);
+  white-space: pre-line;   /* 痛點以資料裡的手動斷行(\n)分行,行長勻稱、好讀 */
+}
+.rblock__sign {
+  margin-top: clamp(4px, 1vh, 12px);
+  font-size: clamp(17px, 2.4vh, 30px);
+  letter-spacing: 0.12em;
+  color: color-mix(in srgb, var(--scene-accent) 55%, #fff);
 }
 
 /* ── Sensor ring (the physical placement target) ─────────────────────────────── */
@@ -228,16 +249,10 @@ body {
   place-items: center;
   filter: drop-shadow(0 0 14px color-mix(in srgb, var(--ring-accent, var(--accent)) 60%, transparent));
 }
-.prompt__glyph { width: 100%; height: 100%; }
-
-.scene__name {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: clamp(24px, 3.6vh, 40px);
-  letter-spacing: 0.08em;
-  color: #fff;
-  text-shadow: 0 0 24px var(--scene-accent);
-}
+/* When the ring holds the persona NAME (wider than the 0.3d glyph box), size the
+   box to its content — otherwise an oversized grid item aligns to start and the
+   name drifts right of the true ring centre. */
+.sensor__icon:has(.sensor-name) { width: auto; height: auto; }
 
 /* ── Confirm ripple ──────────────────────────────────────────────────────────── */
 .confirm {
