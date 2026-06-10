@@ -3,6 +3,7 @@ dist/
 dist-ssr/
 *.local
 .DS_Store
+.chrome-profile/
 
 # python
 __pycache__/
