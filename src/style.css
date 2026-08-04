@@ -1,21 +1,41 @@
-/* ── Design tokens (shared with F-region / vibenfc) ──────────────────────────── */
+/* 主字型:TASA Orbiter(變體字型,拉丁/數字);中文自動 fallback 到中文字型 */
+@font-face {
+  font-family: 'TASA Orbiter';
+  src: url('/fonts/TASAOrbiter-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+/* 中文字型:GlowSans TC Condensed(窄體 ≈0.9 字寬)*/
+@font-face { font-family: 'GlowSans TC'; src: url('/fonts/GlowSansTC-Condensed-Light.otf') format('opentype');   font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'GlowSans TC'; src: url('/fonts/GlowSansTC-Condensed-Regular.otf') format('opentype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'GlowSans TC'; src: url('/fonts/GlowSansTC-Condensed-Medium.otf') format('opentype');  font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'GlowSans TC'; src: url('/fonts/GlowSansTC-Condensed-Bold.otf') format('opentype');    font-weight: 700; font-style: normal; font-display: swap; }
+
+/* ── Design tokens (aligned with B-TV 藍白 / B-TV-blue) ──────────────────────── */
 :root {
-  --accent:      #009393;
-  --accent-2:    #4dbaba;
-  --accent-deep: #006a6a;
-  --accent-glow: rgba(0, 147, 147, 0.30);
+  /* 藍白玻璃主題:主色由 teal 改為電光藍;底色改為深藍。 */
+  --accent:      #2f7bff;
+  --accent-2:    #5b9dff;
+  --accent-deep: #1657d6;
+  --accent-glow: rgba(47, 123, 255, 0.28);
 
-  --c-bg:       #02090b;
-  --c-text:     #eef3f3;
-  --c-text-dim: #8aa2a2;
+  --c-bg:       #050d1f;
+  --c-text:     #eaf1ff;
+  --c-text-dim: #7f96bd;
 
-  --font-cjk:     'Chiron Hei HK', 'Space Grotesk', sans-serif;
-  --font-display: 'Space Grotesk', 'Chiron Hei HK', sans-serif;
-  --font-hud:     'JetBrains Mono', monospace;
+  --good:  #2f7bff;
+  --warn:  #f59e0b;
+  --info:  #6f8ba0;
+  --down:  #f43f5e;
+
+  --font-cjk:     'TASA Orbiter', 'GlowSans TC', 'Chiron Hei HK', sans-serif;
+  --font-display: 'TASA Orbiter', 'GlowSans TC', 'Space Grotesk', sans-serif;
+  --font-hud:     'TASA Orbiter', 'GlowSans TC', 'JetBrains Mono', monospace;
 
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* per-scene accent, set inline by App; falls back to brand teal */
+  /* per-scene accent, set inline by App; falls back to brand blue */
   --scene-accent: var(--accent);
 }
 
@@ -44,12 +64,47 @@ body {
   background:
     /* primary glow follows the sensor ring into the LEFT half */
     radial-gradient(ellipse 52% 66% at 24% 50%,
-      color-mix(in srgb, var(--scene-accent) 28%, transparent) 0%,
-      color-mix(in srgb, var(--scene-accent) 9%, transparent) 44%,
+      color-mix(in srgb, var(--scene-accent) 24%, transparent) 0%,
+      color-mix(in srgb, var(--scene-accent) 7%, transparent) 44%,
       transparent 72%),
-    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 46%, rgba(0,0,0,0.72) 100%),
+    /* 角色色鋪滿整個畫面(1-5 頁 = 各自的 persona 色)。沿用 B-TV 的置中參數,
+       上面那道左偏光暈只罩住感應環那半邊,右半邊的字會留在藍底、看不出換色。 */
+    radial-gradient(ellipse 60% 56% at 50% 44%,
+      color-mix(in srgb, var(--scene-accent) 16%, transparent) 0%,
+      color-mix(in srgb, var(--scene-accent) 5%, transparent) 40%,
+      transparent 70%),
+    /* soft blue-white top light */
+    radial-gradient(120% 90% at 50% 6%, rgba(120,165,255,0.12) 0%, rgba(120,165,255,0) 46%),
+    /* edge falloff — blue-black, so the projection blends into the table */
+    radial-gradient(ellipse 128% 104% at 40% 50%, transparent 42%, rgba(1,4,12,0.62) 100%),
+    /* deep-blue base */
+    radial-gradient(130% 110% at 40% 45%, #12285a 0%, #0c1d44 44%, #081633 72%, #050e22 100%),
     var(--c-bg);
   transition: background 0.8s var(--ease);
+}
+
+/* ── 1-5 情境頁:整個底以角色色為主(土色 / 粉紅 / 墨綠 …)──────────────────────
+   色階全部從 --scene-accent 推導,所以五個角色共用這一條規則,加角色不用改 CSS。
+   只掛在 .stage--scene:置卡 / 選角色兩頁維持原本的深藍底。
+   頂光與邊緣壓暗都改中性白 / 中性黑 — 沿用藍白版的話,土色和粉紅會被拉回藍調,
+   角色色就當不成主角了。 */
+.stage--scene {
+  background:
+    /* 感應環那側的亮部(維持與 .stage 相同強度,別讓環被背景吃掉) */
+    radial-gradient(ellipse 52% 66% at 24% 50%,
+      color-mix(in srgb, var(--scene-accent) 24%, transparent) 0%,
+      color-mix(in srgb, var(--scene-accent) 7%, transparent) 44%,
+      transparent 72%),
+    /* 中性白頂光 */
+    radial-gradient(120% 90% at 50% 6%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 46%),
+    /* 邊緣壓暗:中性黑 */
+    radial-gradient(ellipse 128% 104% at 40% 50%, transparent 42%, rgba(2,3,6,0.58) 100%),
+    /* 角色色主體:中心最濃、往外遞減,同一畫面內仍有深淺明暗 */
+    radial-gradient(130% 110% at 40% 45%,
+      color-mix(in srgb, var(--scene-accent) 70%, #0b0f18) 0%,
+      color-mix(in srgb, var(--scene-accent) 48%, #090c14) 44%,
+      color-mix(in srgb, var(--scene-accent) 28%, #06080e) 72%,
+      color-mix(in srgb, var(--scene-accent) 14%, #03040a) 100%);
 }
 
 .stage__vignette {
@@ -57,10 +112,10 @@ body {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 52px 52px;
-  mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 80%);
+    linear-gradient(rgba(150,190,255,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(150,190,255,0.045) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 72% 72% at 50% 50%, #000 30%, transparent 82%);
 }
 
 /* ── Two-panel layout (left = sensor, right = words; no hard divider) ─────────── */
@@ -86,7 +141,7 @@ body {
 .sensor-glyph { width: 100%; height: 100%; }
 .sensor-name {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 700;   /* GlowSans TC ships 300/400/500/700 — 600 would be synthesised */
   font-size: clamp(22px, 3.4vh, 38px);
   letter-spacing: 0.08em;
   text-indent: 0.08em;   /* balance trailing letter-spacing → glyphs dead-centre */
@@ -130,18 +185,74 @@ body {
   text-transform: uppercase;
   color: var(--c-text-dim);
 }
+/* Prompt hero(置卡 / 選角色)— 比照 B-TV 待機頁「感應光寓」:細體 + 寬字距,
+   靠自體發光而不是字重撐存在感,下方映一道漸淡倒影。 */
 .rblock__title {
-  font-weight: 700;
+  font-weight: 300;
   font-size: clamp(40px, 7vh, 84px);
-  letter-spacing: 0.04em;
-  line-height: 1.2;
+  letter-spacing: 0.16em;
+  line-height: 1.28;
+  color: #fff;   /* fallback:萬一 background-clip:text 不支援仍是白字 */
+  /* 字身由下往上漸淡:底部純白、字頂轉成偏藍的暗調。background-size 綁 line-height
+     + repeat-y → 每一行各自跑一次漸層,兩行不會變成整段上暗下亮。
+     用 background-clip 而不是 mask:mask 的繪製區被 clip 在 border box,
+     會把下面那圈 90px 外暈切出硬邊矩形。 */
+  background-image: linear-gradient(to top,
+    #ffffff 0%, #ffffff 34%, #d6e6ff 72%, #a9c8f0 100%);
+  background-size: 100% 1.28em;   /* = line-height */
+  background-repeat: repeat-y;
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* 自體發光:整組往下偏移,光積在字腳、往字頂變薄 → 像光從桌面往上打 */
+  text-shadow:
+    0 2px 8px rgba(255,255,255,0.95),
+    0 6px 22px rgba(198,224,255,0.85),
+    0 12px 46px rgba(120,180,255,0.6),
+    0 18px 90px rgba(80,150,255,0.45),
+    0 3px 12px rgba(11,28,60,0.4);
+  /* 亮度跟著往外擴的脈動圓:sensor-pulse 同為 2.6s,兩者都在首次掛載時起跑。
+     三顆脈動只有第一顆沒有 delay,對到的就是它。 */
+  animation: prompt-glow 2.6s ease-out infinite;
 }
+/* 光暈強度 = 脈動圓的大小。層數必須前後一致(全 0 alpha 而不是 none),
+   否則 text-shadow 無法內插、會變成硬切。 */
+@keyframes prompt-glow {
+  /* 谷底 — 收斂到「偏暗」而不是全滅,明暗幅度縮小 */
+  0%, 100% {
+    text-shadow:
+      0 2px 7px rgba(255,255,255,0.62),
+      0 5px 18px rgba(198,224,255,0.48),
+      0 10px 38px rgba(120,180,255,0.32),
+      0 15px 72px rgba(80,150,255,0.20),
+      0 3px 12px rgba(11,28,60,0.4);
+  }
+  /* 峰值 — 收斂到「偏亮」而不是全開。放 78% 不放 100%:0% 與 100% 在 loop 裡是
+     同一瞬間,峰值擺 100% 會在接縫上瞬跳。 */
+  78% {
+    text-shadow:
+      0 3px 12px rgba(255,255,255,0.88),
+      0 9px 32px rgba(198,224,255,0.76),
+      0 17px 64px rgba(120,180,255,0.55),
+      0 24px 120px rgba(80,150,255,0.38),
+      0 3px 12px rgba(11,28,60,0.4);
+  }
+}
+
 .rblock__sub {
+  font-weight: 500;   /* GlowSans is condensed — 400 reads too light on a projection */
   font-size: clamp(18px, 2.7vh, 32px);
   line-height: 1.8;
   letter-spacing: 0.03em;
   color: var(--c-text-dim);
   max-width: 22ch;
+  /* 背景字體反光:由上(貼字端)到下亮度遞減,只顯示靠字的 2/3。
+     遮罩在鏡射空間裡跑,100% 端是貼著字的那一頭 → 寫成「暗 0% → 亮 100%」,
+     所以 0→33% 全透明切掉的是「遠離字的那 1/3」。
+     -0.46em:line-height 1.8 在字底撐出 0.4em 半行距,先吃掉它再多收一點,
+     讓倒影頂端貼齊字腳。 */
+  -webkit-box-reflect: below -0.46em linear-gradient(
+    rgba(255,255,255,0) 33%, rgba(255,255,255,0.26) 100%);
 }
 
 /* scene block — the emotional pain-point. Bigger, warmer, more air. */
@@ -161,6 +272,7 @@ body {
   max-width: 16ch;
 }
 .rblock__pain {
+  font-weight: 500;
   font-size: clamp(18px, 2.7vh, 32px);
   line-height: 1.95;
   letter-spacing: 0.04em;
@@ -192,6 +304,10 @@ body {
   opacity: 0;
   animation: sensor-pulse 2.6s ease-out infinite;
 }
+/* 有卡片在讀卡機上 → 收起吸引用的漣漪。用 visibility 不用卸載或 display:none:
+   兩者都會中止動畫,回到待機時重新起跑就會跟標題的 prompt-glow 失去相位。 */
+.sensor--locked .sensor__pulse { visibility: hidden; }
+
 .sensor__pulse:nth-of-type(2) { animation-delay: 0.86s; }
 .sensor__pulse:nth-of-type(3) { animation-delay: 1.72s; }
 @keyframes sensor-pulse {
@@ -315,6 +431,6 @@ body {
   background: currentColor;
 }
 .statusdot--live  { color: var(--accent-2); }
-.statusdot--idle  { color: #f59e0b; }
-.statusdot--down  { color: #f43f5e; }
+.statusdot--idle  { color: var(--warn); }
+.statusdot--down  { color: var(--down); }
 .statusdot--live .statusdot__led { box-shadow: 0 0 8px currentColor; }

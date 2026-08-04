@@ -156,12 +156,14 @@ export default function App() {
   // accent / pulse derive from step) so it never flickers and stays pinned for
   // projection alignment to the real reader.
   return (
-    <div className="stage" style={persona ? { '--scene-accent': persona.accent } : undefined}>
+    <div className={`stage stage--${step}`} style={persona ? { '--scene-accent': persona.accent } : undefined}>
       <div className="stage__vignette" />
 
       <div className="panels">
         <div className="panel panel--left">
-          <SensorRing accent={persona?.accent || 'var(--accent)'} pulse={step !== 'scene'}>
+          {/* 情境頁(1-5)的環改白:背景已整片是角色色,環再用同一個色相就跳不出來。
+              只給色相,透明度交給 style.css 既有的 color-mix 百分比處理。 */}
+          <SensorRing accent={persona ? '#fff' : 'var(--accent)'} pulse={step !== 'scene'}>
             {step === 'scene' && persona
               ? <span className="sensor-name">{persona.name}</span>
               : step === 'place-character'

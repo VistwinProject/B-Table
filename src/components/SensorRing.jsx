@@ -10,8 +10,10 @@
 // the reader the caller drops pulse so the ring holds a steady "locked" state.
 export default function SensorRing({ accent = 'var(--accent)', pulse = true, children }) {
   return (
-    <div className="sensor" style={{ '--ring-accent': accent }}>
-      {pulse && [0, 1, 2].map((i) => (
+    <div className={`sensor${pulse ? '' : ' sensor--locked'}`} style={{ '--ring-accent': accent }}>
+      {/* 常駐、不卸載 — 只用 CSS 藏起來。卸載會讓動畫重新起跑,而標題的 prompt-glow
+          是跟這組脈動鎖相的(圓最小=全暗、最大=最亮),重起跑就會失去相位。 */}
+      {[0, 1, 2].map((i) => (
         <span key={i} className="sensor__pulse" />
       ))}
 
