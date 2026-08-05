@@ -1,7 +1,12 @@
 <!doctype html>
+<!-- 需要用顏色指認感應環部件時,在 <html> 加回 data-debug-parts(配色規則在 style.css 末尾)。 -->
 <html lang="zh-Hant" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
+    <!-- 擋搜尋引擎收錄(同 B-TV-blue)。刻意不加 robots.txt 的 Disallow:
+         擋掉爬取後爬蟲反而讀不到下面這行 noindex,靠外部連結仍可能被列成純網址。 -->
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="googlebot" content="noindex, nofollow" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>感應光寓 · 桌面感應</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />

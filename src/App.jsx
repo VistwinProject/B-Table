@@ -100,7 +100,18 @@ export default function App() {
   useEffect(() => {
     let alive = true
     const connect = () => {
-      const ws = new WebSocket(WS_URL)
+      // WebSocket 建構式會「同步 throw」的情境:https 頁面連 ws:// 被擋成 mixed
+      // content、URL 不合法等。不接住的話例外會冒出 useEffect 之外,整棵樹被卸載
+      // 變成白畫面。接住後降級成 disconnected + 定時重試,跟斷線是同一條路徑。
+      let ws
+      try {
+        ws = new WebSocket(WS_URL)
+      } catch {
+        if (!alive) return
+        dispatch({ type: 'ws-status', status: 'disconnected' })
+        timerRef.current = setTimeout(connect, RECONNECT_MS)
+        return
+      }
       wsRef.current = ws
       ws.onopen    = () => { if (alive) { dispatch({ type: 'ws-status', status: 'connected' }); clearTimeout(timerRef.current) } }
       ws.onmessage = ({ data }) => { try { ingest(JSON.parse(data)) } catch { /* ignore */ } }

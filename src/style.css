@@ -140,14 +140,15 @@ body {
 /* glyph / persona name inside the ring */
 .sensor-glyph { width: 100%; height: 100%; }
 .sensor-name {
-  font-family: var(--font-display);
-  font-weight: 700;   /* GlowSans TC ships 300/400/500/700 — 600 would be synthesised */
+  /* 字形比例對齊第一頁標題 .rblock__title:同一組 --font-cjk、weight 300、0.16em 字距。
+     GlowSans TC 有 300(Light)實體字重,不會是合成的假細體。 */
+  font-family: var(--font-cjk);
+  font-weight: 300;
   font-size: clamp(22px, 3.4vh, 38px);
-  letter-spacing: 0.08em;
-  text-indent: 0.08em;   /* balance trailing letter-spacing → glyphs dead-centre */
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;   /* balance trailing letter-spacing → glyphs dead-centre */
   white-space: nowrap;
   color: #fff;
-  text-shadow: 0 0 24px var(--ring-accent, var(--accent));
 }
 
 /* ── Right panel: crossfading text blocks ────────────────────────────────────── */
@@ -331,7 +332,45 @@ body {
   border-color: color-mix(in srgb, var(--ring-accent, var(--accent)) 75%, transparent);
 }
 
-/* rotating conic sweep — the "scanning" motion */
+/* ── 1-5 情境頁:白線沿圓周有深淺變化 ────────────────────────────────────────
+   border-color 吃不了漸層,所以把描邊交給 ::before — conic-gradient 給沿圓周的
+   明暗,再用 mask 切出一圈細環。
+   mask 用 calc(50% - Npx) 而不是純百分比:內圈只有外圈 0.6 倍徑,百分比會讓它的
+   線細掉快一半;用 px 才能兩圈一樣粗。
+   首尾停點同值(0.80),否則 0°/360° 接縫會留一條硬邊。 */
+.stage--scene .sensor__ring {
+  position: relative;
+  border-color: transparent;   /* 保留 1.5px 佔位,顏色交給 ::before */
+}
+.stage--scene .sensor__ring::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;               /* 絕對定位的包含塊是 padding box,補回 border 寬度才對齊描邊外緣 */
+  border-radius: 50%;
+  background: conic-gradient(from var(--ring-phase, 210deg),
+    rgba(255,255,255,0.80) 0deg,
+    rgba(255,255,255,0.30) 60deg,
+    rgba(255,255,255,0.62) 130deg,
+    rgba(255,255,255,0.18) 200deg,
+    rgba(255,255,255,0.55) 275deg,
+    rgba(255,255,255,0.80) 360deg);
+  /* closest-side 是必要的,不能省。radial-gradient 不指定尺寸時預設 farthest-corner,
+     正方形元素的話那是「半寬 × √2」— 停點的 100% 會落在半徑的 1.414 倍處,描邊帶
+     會被推到圓外、真正該畫線的位置反而空的(外圈就是這樣整條消失的)。
+     指定 closest-side 之後,100% 才等於元素半徑。 */
+  -webkit-mask: radial-gradient(circle closest-side,
+    transparent calc(100% - 1.9px), #000 calc(100% - 1.4px),
+    #000 calc(100% - 0.2px), transparent 100%);
+          mask: radial-gradient(circle closest-side,
+    transparent calc(100% - 1.9px), #000 calc(100% - 1.4px),
+    #000 calc(100% - 0.2px), transparent 100%);
+  pointer-events: none;
+}
+/* 內圈錯開相位,兩圈的亮處不要落在同一邊 */
+.stage--scene .sensor__ring--inner { --ring-phase: 30deg; }
+
+/* rotating conic sweep — the "scanning" motion.
+   這是置卡頁的原始幾何:帶外緣停在半徑 0.451D,外圈在 0.5D,掃描帶是懸空的。 */
 .sensor__sweep {
   width: calc(var(--d) * 0.92);
   height: calc(var(--d) * 0.92);
@@ -345,6 +384,18 @@ body {
   mask: radial-gradient(circle, transparent 38%, #000 39%, #000 49%, transparent 50%);
   -webkit-mask: radial-gradient(circle, transparent 38%, #000 39%, #000 49%, transparent 50%);
   animation: sensor-sweep 4s linear infinite;
+}
+/* 置卡頁以外:掃描帶外移壓在外圈那條線上。尺寸得取滿 --d — 0.92D 的元素半徑只有
+   0.46D,搆不到外圈的 0.5D,光調遮罩百分比是推不過去的。帶寬維持約 0.09D。 */
+.stage:not(.stage--place-card) .sensor__sweep {
+  width: var(--d);
+  height: var(--d);
+  /* 同樣要 closest-side — 之前沿用預設的 farthest-corner,49.4% 實際落在半徑
+     125.8px 而不是 178px,所以「貼齊外圈」其實沒發生,只往外挪了 11px。 */
+  mask: radial-gradient(circle closest-side,
+    transparent 81%, #000 82.2%, #000 99.5%, transparent 100%);
+  -webkit-mask: radial-gradient(circle closest-side,
+    transparent 81%, #000 82.2%, #000 99.5%, transparent 100%);
 }
 @keyframes sensor-sweep { to { transform: rotate(360deg); } }
 
@@ -368,7 +419,9 @@ body {
 /* When the ring holds the persona NAME (wider than the 0.3d glyph box), size the
    box to its content — otherwise an oversized grid item aligns to start and the
    name drifts right of the true ring centre. */
-.sensor__icon:has(.sensor-name) { width: auto; height: auto; }
+/* filter: none — 環內放角色名時不發光。這個 wrapper 的 drop-shadow 是給置卡 /
+   鑰匙圈圖示用的,不關掉的話光暈會落在字上。 */
+.sensor__icon:has(.sensor-name) { width: auto; height: auto; filter: none; }
 
 /* ── Confirm ripple ──────────────────────────────────────────────────────────── */
 .confirm {
@@ -434,3 +487,39 @@ body {
 .statusdot--idle  { color: var(--warn); }
 .statusdot--down  { color: var(--down); }
 .statusdot--live .statusdot__led { box-shadow: 0 0 8px currentColor; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   TEMP · 感應環部件識別配色 — 只為了溝通時能指名道姓,不是設計稿的一部分。
+   開關在 index.html 的 <html data-debug-parts>,拿掉屬性就整組失效。
+   一律 !important:要蓋過 .stage--scene 那組同權重的規則,也不必在意擺放順序。
+   確定不需要之後,把這一整塊連同 index.html 的屬性一起刪掉。
+
+     紅   #ff2d2d  外圈
+     黃   #ffd400  掃描帶(會轉的那條)
+     藍   #00a2ff  內圈
+     綠   #00e05a  中心核
+     洋紅 #ff00d0  脈動漣漪(往外擴的 3 條)
+     橘   #ff8a00  環內圖示 / 角色名
+   ══════════════════════════════════════════════════════════════════════════════ */
+[data-debug-parts] .sensor__pulse        { border-color: #ff00d0 !important; }
+
+[data-debug-parts] .sensor__ring--outer  { border-color: #ff2d2d !important;
+                                           box-shadow: 0 0 60px rgba(255,45,45,0.35) !important; }
+[data-debug-parts] .sensor__ring--outer::before { background: #ff2d2d !important; }
+
+[data-debug-parts] .sensor__ring--inner  { border-color: #00a2ff !important; }
+[data-debug-parts] .sensor__ring--inner::before { background: #00a2ff !important; }
+
+[data-debug-parts] .sensor__sweep {
+  background: conic-gradient(from 0deg,
+    transparent 0deg, #ffd400 60deg, transparent 120deg, transparent 360deg) !important;
+}
+[data-debug-parts] .sensor__core {
+  background: radial-gradient(circle, rgba(0,224,90,0.55) 0%, transparent 70%) !important;
+}
+[data-debug-parts] .sensor__icon,
+[data-debug-parts] .sensor-name {
+  color: #ff8a00 !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
