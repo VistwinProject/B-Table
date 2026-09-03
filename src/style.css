@@ -83,29 +83,29 @@ body {
   transition: background 0.8s var(--ease);
 }
 
-/* ── 1-5 情境頁:整個底以角色色為主(土色 / 粉紅 / 墨綠 …)──────────────────────
+/* ── 1-5 情境頁:整個底就是該角色色票本人 ────────────────────────────────────
+   平塗色 = B-TV sceneColorStore.js 的 fillColor():色票混 20% 暖灰(#4a4a30)。
+   那 20% 純粹是為了白字 —— 色票原值亮度偏高,直接鋪白字會糊。除此之外不混黑:
+   底色要一眼認得出是色卡上那一格。
+   深淺變化改用白光「提亮」而不是黑色「壓暗」;邊緣只用同色系的深一階收邊,避免
+   投影在桌面上切出一塊硬邊矩形。
    色階全部從 --scene-accent 推導,所以五個角色共用這一條規則,加角色不用改 CSS。
-   只掛在 .stage--scene:置卡 / 選角色兩頁維持原本的深藍底。
-   頂光與邊緣壓暗都改中性白 / 中性黑 — 沿用藍白版的話,土色和粉紅會被拉回藍調,
-   角色色就當不成主角了。 */
+   只掛在 .stage--scene:置卡頁是白底、選角色頁維持深藍底。 */
 .stage--scene {
+  --scene-fill: color-mix(in srgb, var(--scene-accent) 80%, #4a4a30);
   background:
-    /* 感應環那側的亮部(維持與 .stage 相同強度,別讓環被背景吃掉) */
+    /* 感應環那側的亮部:白光提亮,別讓環被背景吃掉 */
     radial-gradient(ellipse 52% 66% at 24% 50%,
-      color-mix(in srgb, var(--scene-accent) 24%, transparent) 0%,
-      color-mix(in srgb, var(--scene-accent) 7%, transparent) 44%,
-      transparent 72%),
-    /* 中性白頂光 */
+      rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 44%, transparent 72%),
+    /* 頂光 */
     radial-gradient(120% 90% at 50% 6%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 46%),
-    /* 邊緣壓暗:中性黑 */
-    radial-gradient(ellipse 128% 104% at 40% 50%, transparent 42%, rgba(2,3,6,0.58) 100%),
-    /* 角色色主體:中心最濃、往外遞減,同一畫面內仍有深淺明暗 */
-    radial-gradient(130% 110% at 40% 45%,
-      color-mix(in srgb, var(--scene-accent) 70%, #0b0f18) 0%,
-      color-mix(in srgb, var(--scene-accent) 48%, #090c14) 44%,
-      color-mix(in srgb, var(--scene-accent) 28%, #06080e) 72%,
-      color-mix(in srgb, var(--scene-accent) 14%, #03040a) 100%);
+    /* 邊緣收一階:用同色系的深暖調,不是黑 */
+    radial-gradient(ellipse 128% 104% at 40% 50%,
+      transparent 48%, color-mix(in srgb, var(--scene-fill) 86%, #241f14) 100%),
+    /* 平塗底 = 色票本人(混 20% 暖灰) */
+    var(--scene-fill);
 }
+
 
 .stage__vignette {
   position: absolute;
@@ -262,7 +262,9 @@ body {
   font-size: clamp(14px, 1.9vh, 22px);
   letter-spacing: 0.32em;
   text-indent: 0.32em;
-  color: color-mix(in srgb, var(--scene-accent) 62%, var(--c-text-dim));
+  /* 平塗底不再壓黑 → 這幾行原本混 --scene-accent 的字色會跟底同色而糊掉,
+     改走白字不同透明度(與 B-TV 平塗色塊 + 白字同一套)。 */
+  color: rgba(255,255,255,0.72);
 }
 .rblock__q {
   font-weight: 500;
@@ -277,14 +279,14 @@ body {
   font-size: clamp(18px, 2.7vh, 32px);
   line-height: 1.95;
   letter-spacing: 0.04em;
-  color: color-mix(in srgb, var(--c-text) 64%, transparent);
+  color: rgba(255,255,255,0.88);
   white-space: pre-line;   /* 痛點以資料裡的手動斷行(\n)分行,行長勻稱、好讀 */
 }
 .rblock__sign {
   margin-top: clamp(4px, 1vh, 12px);
   font-size: clamp(17px, 2.4vh, 30px);
   letter-spacing: 0.12em;
-  color: color-mix(in srgb, var(--scene-accent) 55%, #fff);
+  color: rgba(255,255,255,0.75);
 }
 
 /* ── Sensor ring (the physical placement target) ─────────────────────────────── */
@@ -523,3 +525,88 @@ body {
   filter: none !important;
   text-shadow: none !important;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   第一頁(置卡)= 白底藍字。色票直接沿用 B-TV 待機頁白版(--idle-bg-1/2/3 那組)。
+   只掛 .stage--place-card — 選角色頁與 1-5 情境頁維持原本的深底。
+   放在檔案最後 → 同權重覆蓋前面的深色設定;要收回只要刪掉這整段。
+   ══════════════════════════════════════════════════════════════════════════════ */
+.stage--place-card {
+  /* 環與圖示在白底上要更飽和才浮得起來(深底版那組藍會被白吃掉) */
+  --accent:     #2f8dfb;
+  --accent-2:   #7cc0ff;
+  --c-text:     #17357a;
+  --c-text-dim: #6a8cc8;
+  color: var(--c-text);
+  background:
+    /* 感應環那側的淡藍暈 — 對應深底版的左偏光暈,維持「光從環那邊來」 */
+    radial-gradient(ellipse 52% 66% at 24% 50%,
+      rgba(150,195,250,0.34) 0%, rgba(150,195,250,0.10) 44%, transparent 72%),
+    /* 左上留白、右下最深的淡藍 */
+    linear-gradient(122deg, #ffffff 0%, #ffffff 26%, #eef5ff 58%, #d7e6fa 100%);
+}
+
+/* 格線:深底版是淡藍白線,白底上完全看不見 → 換成淡藍灰 */
+.stage--place-card .stage__vignette {
+  background:
+    linear-gradient(rgba(70,110,180,0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(70,110,180,0.10) 1px, transparent 1px);
+}
+/* 字色 / 字體這幾條掛在區塊自己(.rblock--card)而不是 .stage--place-card:三個文字
+   區塊是永遠掛載的,掛在 stage 上的話,第一頁在畫面上時連底下沒顯示的第二頁區塊也會
+   吃到白底版的字色與字體 —— 切頁的 0.6s 交叉淡出中會看到它先用錯的樣式淡進來再跳掉。
+   背景 / 格線 / 環的覆蓋則相反,那些本來就該跟著 step 走,留在 .stage--place-card。 */
+
+/* 大標:字身換深藍漸層,自體發光換成淡藍灰的厚度陰影 —— 深底版那圈白色外暈
+   鋪在白底上會整個消失,只剩一塊灰糊。脈動照舊(只換 animation-name),
+   所以跟感應環 sensor-pulse 的相位不會跑掉。 */
+.rblock--card .rblock__title {
+  color: #1b3f8f;   /* fallback:background-clip:text 不支援時的實色 */
+  background-image: linear-gradient(to top,
+    #1b3f8f 0%, #1b3f8f 34%, #2e59a8 72%, #4a76c4 100%);
+  animation-name: prompt-glow-light;
+}
+/* 層數要與 prompt-glow 對齊(用 0 alpha 而不是省略),否則 text-shadow 無法內插。 */
+@keyframes prompt-glow-light {
+  0%, 100% {
+    text-shadow:
+      0 2px  8px rgba(120,155,215,0.20),
+      0 6px 20px rgba(110,145,205,0.16),
+      0 14px 38px rgba(105,140,200,0.10);
+  }
+  78% {
+    text-shadow:
+      0 2px 10px rgba(120,155,215,0.34),
+      0 8px 28px rgba(110,145,205,0.26),
+      0 18px 52px rgba(105,140,200,0.18);
+  }
+}
+
+/* 副標的桌面反光:白色在白底上看不見 → 換淡藍 */
+.rblock--card .rblock__sub {
+  -webkit-box-reflect: below -0.46em linear-gradient(
+    rgba(60,105,180,0) 33%, rgba(60,105,180,0.18) 100%);
+}
+
+/* 環內圖示:深底版是「環色混白」,白底上會糊成一片 → 改混深藍,外暈同步收斂 */
+.stage--place-card .sensor__icon {
+  color: color-mix(in srgb, var(--ring-accent, var(--accent)) 55%, #14357e);
+  filter: drop-shadow(0 2px 10px rgba(47,141,251,0.28));
+}
+
+/* 第一頁的字體:比照 B-TV 待機頁 —— 不用 GlowSans Condensed(≈0.9 窄體),
+   改 Chiron Hei HK,字身回到 1:1 正比例。Chiron 只有 400/500/700(見 index.html),
+   沒有 300;沿用深底版的 weight 300 會變成合成假細體,所以照 B-TV 取 500。
+   其餘頁面維持 GlowSans Condensed 不動。 */
+.rblock--card .rblock__eyebrow,
+.rblock--card .rblock__title,
+.rblock--card .rblock__sub {
+  font-family: 'Chiron Hei HK', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif;
+}
+.rblock--card .rblock__eyebrow { font-weight: 400; }
+.rblock--card .rblock__title   { font-weight: 500; }
+.rblock--card .rblock__sub     { font-weight: 400; }  /* Chiron 400 比 GlowSans 400 厚,不需要補到 500 */
+/* 深底版的 max-width:22ch 是照 GlowSans 的 `0` 字寬換算的,換成 Chiron 之後
+   同樣 22ch 只放得下約 11 個中文字 → 副標會折行掉一個孤字。中文用 em 直接對
+   字數比 ch 準(1em ≈ 1 個全形字)。 */
+.rblock--card .rblock__sub { max-width: 18em; }

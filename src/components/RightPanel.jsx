@@ -13,7 +13,7 @@ export default function RightPanel({ step, persona }) {
 
   return (
     <div className="rpanel">
-      <div className={`rblock${step === 'place-card' ? ' rblock--active' : ''}`}>
+      <div className={`rblock rblock--card${step === 'place-card' ? ' rblock--active' : ''}`}>
         <div className="rblock__inner">
           <p className="rblock__eyebrow">感應光寓</p>
           <h1 className="rblock__title">把邀請卡<br />放在感應區</h1>
