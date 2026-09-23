@@ -1,9 +1,8 @@
 import { useEffect, useReducer, useRef, useCallback } from 'react'
 import { PERSONAS, PERSONA_ORDER } from './personas.js'
+import { initial, reducer, deriveStep } from './session.js'
 import SensorRing from './components/SensorRing.jsx'
 import RightPanel from './components/RightPanel.jsx'
-import ConfirmRipple from './components/ConfirmRipple.jsx'
-import StatusDot from './components/StatusDot.jsx'
 import { CardIcon, KeyringIcon } from './components/icons.jsx'
 
 // Same WS contract as the F-region desktop (vibenfc), so B's NFC daemon can
@@ -14,70 +13,6 @@ import { CardIcon, KeyringIcon } from './components/icons.jsx'
 // VITE_WS_URL only for special setups (e.g. a remote daemon).
 const WS_URL       = import.meta.env.VITE_WS_URL || 'ws://localhost:8788'
 const RECONNECT_MS = 3000
-const CONFIRM_MS   = 1800
-
-// ── Session state machine ────────────────────────────────────────────────────
-// Display step is *derived* from the session, never set directly:
-//   !cardScanned                 → 'place-card'      (attract / resting state)
-//   cardScanned && !character    → 'place-character'
-//   character                    → 'scene'
-const initial = {
-  wsStatus:    'connecting',
-  connected:   false,   // reader present
-  cardScanned: false,
-  character:   null,    // persona id of the keyring currently driving the scene
-  onReader:    null,    // 'card' | 'character' | null — what is physically on now
-  confirm:     null,    // transient { kind, id, seq } for the success ripple
-  seq:         0,
-}
-
-function reducer(state, action) {
-  switch (action.type) {
-    case 'ws-status':
-      return { ...state, wsStatus: action.status }
-
-    case 'reader-connected':
-      return { ...state, connected: true }
-
-    case 'reader-disconnected':
-      // reader unplugged — keep session step, just drop the live-reader flag
-      return { ...state, connected: false, onReader: null }
-
-    case 'tag-present': {
-      const kind = action.data?.kind
-      const seq  = state.seq + 1
-      if (kind === 'card') {
-        return { ...state, cardScanned: true, onReader: 'card',
-                 confirm: { kind: 'card', id: 'invite', seq }, seq }
-      }
-      if (kind === 'character' && PERSONAS[action.data.id]) {
-        return { ...state, cardScanned: true, character: action.data.id, onReader: 'character',
-                 confirm: { kind: 'character', id: action.data.id, seq }, seq }
-      }
-      return state // unknown / unregistered tag — ignore on the guide
-    }
-
-    case 'tag-remove':
-      // lifting a keyring returns the guide to "place next character"
-      return { ...state, onReader: null,
-               character: state.onReader === 'character' ? null : state.character }
-
-    case 'confirm-clear':
-      return state.confirm?.seq === action.seq ? { ...state, confirm: null } : state
-
-    case 'reset': // operator override (WS) or dev key
-      return { ...initial, wsStatus: state.wsStatus, connected: state.connected }
-
-    default:
-      return state
-  }
-}
-
-function deriveStep(s) {
-  if (s.character)   return 'scene'
-  if (s.cardScanned) return 'place-character'
-  return 'place-card'
-}
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initial)
@@ -89,8 +24,10 @@ export default function App() {
     switch (msg.type) {
       case 'reader-connected':    dispatch({ type: 'reader-connected' }); break
       case 'reader-disconnected': dispatch({ type: 'reader-disconnected' }); break
-      case 'tag-present':         dispatch({ type: 'tag-present', data: msg.data }); break
+      case 'tag-present':         dispatch({ type: 'tag-present', data: msg.data, flowId: msg.flowId }); break
       case 'tag-remove':          dispatch({ type: 'tag-remove' }); break
+      case 'outro':               dispatch(msg); break
+      case 'tv-phase':            dispatch(msg); break
       case 'reset':               dispatch({ type: 'reset' }); break
       default: break
     }
@@ -126,14 +63,6 @@ export default function App() {
     return () => { alive = false; clearTimeout(timerRef.current); wsRef.current?.close() }
   }, [ingest])
 
-  // ── Auto-clear the confirm ripple ─────────────────────────────────────────────
-  useEffect(() => {
-    if (!state.confirm) return
-    const seq = state.confirm.seq
-    const t = setTimeout(() => dispatch({ type: 'confirm-clear', seq }), CONFIRM_MS)
-    return () => clearTimeout(t)
-  }, [state.confirm])
-
   // ── Dev simulator (no hardware needed) ────────────────────────────────────────
   //   c = scan invite card | 1-5 = scan persona keyring | space/x = lift | r = reset
   //   把模擬事件「ws.send 進 8788 server」→ server 廣播給所有 client(桌面 + 電視同步)。
@@ -151,6 +80,7 @@ export default function App() {
         const id = PERSONA_ORDER[Number(e.key) - 1]
         relay({ type: 'tag-present', data: { id, kind: 'character' } })
       }
+      else if (e.key === 'o' || e.key === 'O') relay({ type: 'outro' })
       else if (e.key === ' ' || e.key === 'x' || e.key === 'X') relay({ type: 'tag-remove' })
       else if (e.key === 'r' || e.key === 'R' || e.key === 'Escape') relay({ type: 'reset' })
     }
@@ -161,19 +91,24 @@ export default function App() {
   const step    = deriveStep(state)
   const persona = state.character ? PERSONAS[state.character] : null
 
-  // Two halves, no hard divider: LEFT = the NFC sensor target (the physical
-  // placement point — the confirm ripple lives here too, so it's always centred
-  // on the ring). RIGHT = the words. The sensor ring is persistent (its glyph /
-  // accent / pulse derive from step) so it never flickers and stays pinned for
-  // projection alignment to the real reader.
+  // Keep the projected target fixed over the reader beneath the table.
   return (
-    <div className={`stage stage--${step}`} style={persona ? { '--scene-accent': persona.accent } : undefined}>
-      <div className="stage__vignette" />
+    <div className={`stage stage--${step}${step === 'connected' ? ' stage--place-card' : ''}`} style={persona ? { '--scene-accent': persona.accent } : undefined}>
+      <div className={`connection-background${step === 'connected' ? ' connection-background--active' : ''}`} aria-hidden="true" />
+      <div className={`selection-background${step === 'place-character' ? ' selection-background--active' : ''}`} aria-hidden="true" />
+      {step === 'connected' && <div key={state.flowId} className="connection-bloom" aria-hidden="true"><i /><i /><i /></div>}
+      <div className="scene-backgrounds" aria-hidden="true">
+        {PERSONA_ORDER.map(id => (
+          <div key={id} className={`scene-backdrop${state.character === id ? ' scene-backdrop--active' : ''}`}
+               style={{ '--scene-accent': PERSONAS[id].accent }}>
+            <div className="scene-backdrop__beam" />
+          </div>
+        ))}
+      </div>
+      <div className="stage__vignette" aria-hidden="true" />
 
-      <div className="panels">
+      <div className="panels" aria-hidden={step === 'farewell'}>
         <div className="panel panel--left">
-          {/* 情境頁(1-5)的環改白:背景已整片是角色色,環再用同一個色相就跳不出來。
-              只給色相,透明度交給 style.css 既有的 color-mix 百分比處理。 */}
           <SensorRing accent={persona ? '#fff' : 'var(--accent)'} pulse={step !== 'scene'}>
             {step === 'scene' && persona
               ? <span className="sensor-name">{persona.name}</span>
@@ -182,20 +117,19 @@ export default function App() {
                 : <CardIcon className="sensor-glyph" />}
           </SensorRing>
 
-          {state.confirm && (
-            <ConfirmRipple
-              key={state.confirm.seq}
-              accent={state.confirm.kind === 'character' ? PERSONAS[state.confirm.id]?.accent : null}
-            />
-          )}
+
         </div>
 
         <div className="panel panel--right">
           <RightPanel step={step} persona={persona} />
         </div>
       </div>
+      {step === 'farewell' && <section className="table-farewell" aria-label="體驗結束">
+        <div className="table-farewell__background" aria-hidden="true" />
+        <h1>感謝您的觀看，請往下個展區體驗</h1>
+        <span className="table-farewell__logo" role="img" aria-label="ANLB" />
+      </section>}
 
-      <StatusDot wsStatus={state.wsStatus} connected={state.connected} />
     </div>
   )
 }

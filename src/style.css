@@ -1,17 +1,3 @@
-/* 主字型:TASA Orbiter(變體字型,拉丁/數字);中文自動 fallback 到中文字型 */
-@font-face {
-  font-family: 'TASA Orbiter';
-  src: url('/fonts/TASAOrbiter-VariableFont_wght.ttf') format('truetype-variations');
-  font-weight: 400 800;
-  font-style: normal;
-  font-display: swap;
-}
-/* 中文字型:GlowSans TC Condensed(窄體 ≈0.9 字寬)*/
-@font-face { font-family: 'GlowSans TC'; src: url('/fonts/GlowSansTC-Condensed-Light.otf') format('opentype');   font-weight: 300; font-style: normal; font-display: swap; }
-@font-face { font-family: 'GlowSans TC'; src: url('/fonts/GlowSansTC-Condensed-Regular.otf') format('opentype'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'GlowSans TC'; src: url('/fonts/GlowSansTC-Condensed-Medium.otf') format('opentype');  font-weight: 500; font-style: normal; font-display: swap; }
-@font-face { font-family: 'GlowSans TC'; src: url('/fonts/GlowSansTC-Condensed-Bold.otf') format('opentype');    font-weight: 700; font-style: normal; font-display: swap; }
-
 /* ── Design tokens (aligned with B-TV 藍白 / B-TV-blue) ──────────────────────── */
 :root {
   /* 藍白玻璃主題:主色由 teal 改為電光藍;底色改為深藍。 */
@@ -29,9 +15,11 @@
   --info:  #6f8ba0;
   --down:  #f43f5e;
 
-  --font-cjk:     'TASA Orbiter', 'GlowSans TC', 'Chiron Hei HK', sans-serif;
-  --font-display: 'TASA Orbiter', 'GlowSans TC', 'Space Grotesk', sans-serif;
-  --font-hud:     'TASA Orbiter', 'GlowSans TC', 'JetBrains Mono', monospace;
+  --font-ui: 'Segoe UI Variable', 'Segoe UI', 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', sans-serif;
+  --font-cjk: var(--font-ui);
+  --font-display: var(--font-ui);
+  --font-hud: var(--font-ui);
+  font-synthesis: none;
 
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -83,29 +71,30 @@ body {
   transition: background 0.8s var(--ease);
 }
 
-/* ── 1-5 情境頁:整個底就是該角色色票本人 ────────────────────────────────────
-   平塗色 = B-TV sceneColorStore.js 的 fillColor():色票混 20% 暖灰(#4a4a30)。
-   那 20% 純粹是為了白字 —— 色票原值亮度偏高,直接鋪白字會糊。除此之外不混黑:
-   底色要一眼認得出是色卡上那一格。
-   深淺變化改用白光「提亮」而不是黑色「壓暗」;邊緣只用同色系的深一階收邊,避免
-   投影在桌面上切出一塊硬邊矩形。
-   色階全部從 --scene-accent 推導,所以五個角色共用這一條規則,加角色不用改 CSS。
-   只掛在 .stage--scene:置卡頁是白底、選角色頁維持深藍底。 */
-.stage--scene {
-  --scene-fill: color-mix(in srgb, var(--scene-accent) 80%, #4a4a30);
+/* B-TV's A-shaped light artwork, tinted with the same five persona colors.
+   Persistent layers crossfade without moving the physical sensor target. */
+.stage { isolation: isolate; overflow: hidden; }
+.scene-backgrounds, .scene-backdrop, .scene-backdrop__beam { position: absolute; inset: 0; pointer-events: none; }
+.scene-backdrop {
+  opacity: 0;
   background:
-    /* 感應環那側的亮部:白光提亮,別讓環被背景吃掉 */
-    radial-gradient(ellipse 52% 66% at 24% 50%,
-      rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 44%, transparent 72%),
-    /* 頂光 */
-    radial-gradient(120% 90% at 50% 6%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 46%),
-    /* 邊緣收一階:用同色系的深暖調,不是黑 */
-    radial-gradient(ellipse 128% 104% at 40% 50%,
-      transparent 48%, color-mix(in srgb, var(--scene-fill) 86%, #241f14) 100%),
-    /* 平塗底 = 色票本人(混 20% 暖灰) */
-    var(--scene-fill);
+    radial-gradient(ellipse at 12% 20%, color-mix(in srgb, var(--scene-accent) 68%, #152133), transparent 68%),
+    linear-gradient(125deg, color-mix(in srgb, var(--scene-accent) 48%, #0b1426), color-mix(in srgb, var(--scene-accent) 30%, #081020));
+  transition: opacity 1.2s ease;
 }
-
+.scene-backdrop--active { opacity: 1; }
+.scene-backdrop__beam {
+  background: color-mix(in srgb, var(--scene-accent) 30%, #f2fcff);
+  mask: url('/backgrounds/exhibition-arcs.svg') center / cover no-repeat;
+  mask-mode: luminance;
+  transform: scale(1.2);
+  opacity: .8;
+}
+.scene-backdrop::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 72% 48%, #07111f80, transparent 68%);
+}
+.stage--scene .stage__vignette { opacity: 0; }
 
 .stage__vignette {
   position: absolute;
@@ -127,7 +116,7 @@ body {
 }
 .panel { position: relative; height: 100%; }
 
-/* LEFT — the NFC sensor target + confirm ripple, centred in the half so the
+/* LEFT — the NFC sensor target, centred in the half so the
    projected ring (and its ripple) pin to the physical reader. */
 .panel--left {
   flex: 0 0 46%;
@@ -212,9 +201,8 @@ body {
     0 12px 46px rgba(120,180,255,0.6),
     0 18px 90px rgba(80,150,255,0.45),
     0 3px 12px rgba(11,28,60,0.4);
-  /* 亮度跟著往外擴的脈動圓:sensor-pulse 同為 2.6s,兩者都在首次掛載時起跑。
-     三顆脈動只有第一顆沒有 delay,對到的就是它。 */
-  animation: prompt-glow 2.6s ease-out infinite;
+  /* 標題保持獨立的緩慢呼吸，感應區光波不因切換文字而重啟。 */
+  animation: prompt-glow 7.2s ease-in-out infinite;
 }
 /* 光暈強度 = 脈動圓的大小。層數必須前後一致(全 0 alpha 而不是 none),
    否則 text-shadow 無法內插、會變成硬切。 */
@@ -247,13 +235,6 @@ body {
   letter-spacing: 0.03em;
   color: var(--c-text-dim);
   max-width: 22ch;
-  /* 背景字體反光:由上(貼字端)到下亮度遞減,只顯示靠字的 2/3。
-     遮罩在鏡射空間裡跑,100% 端是貼著字的那一頭 → 寫成「暗 0% → 亮 100%」,
-     所以 0→33% 全透明切掉的是「遠離字的那 1/3」。
-     -0.46em:line-height 1.8 在字底撐出 0.4em 半行距,先吃掉它再多收一點,
-     讓倒影頂端貼齊字腳。 */
-  -webkit-box-reflect: below -0.46em linear-gradient(
-    rgba(255,255,255,0) 33%, rgba(255,255,255,0.26) 100%);
 }
 
 /* scene block — the emotional pain-point. Bigger, warmer, more air. */
@@ -289,278 +270,139 @@ body {
   color: rgba(255,255,255,0.75);
 }
 
-/* ── Sensor ring (the physical placement target) ─────────────────────────────── */
+/* Optical light waves: a soft refractive crest, a hairline rim, and a calm core. */
 .sensor {
   --d: clamp(220px, 34vh, 360px);
-  position: relative;
-  width: var(--d);
-  height: var(--d);
-  display: grid;
-  place-items: center;
+  position: relative; width: var(--d); height: var(--d);
+  display: grid; place-items: center;
 }
-.sensor > * { grid-area: 1 / 1; }
+.sensor__light { position: absolute; inset: 0; pointer-events: none; }
+.sensor__light > span { position: absolute; inset: 0; border-radius: 50%; }
+.sensor__aura {
+  inset: -42% !important;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ring-accent) 14%, transparent), transparent 66%);
+  animation: aura-breathe 7s ease-in-out infinite alternate;
+}
+.sensor__wave {
+  border: 1px solid color-mix(in srgb, var(--ring-accent) 35%, transparent);
+  background: radial-gradient(circle closest-side, transparent 87%, color-mix(in srgb, var(--ring-accent) 9%, transparent) 95%, #f0fbff70 98%, transparent 100%);
+  box-shadow: inset 0 0 12px #e6f7ff26, 0 0 18px color-mix(in srgb, var(--ring-accent) 13%, transparent);
+  animation: optical-wave 7.2s linear infinite;
+  animation-delay: calc(var(--wave-index) * -1.8s);
+}
+.sensor--locked .sensor__wave { animation-duration: 9.6s; animation-delay: calc(var(--wave-index) * -2.4s); }
+.sensor__rim {
+  border: 1px solid color-mix(in srgb, var(--ring-accent) 24%, transparent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--ring-accent) 9%, transparent), inset 0 0 24px #d8f3ff14;
+}
+.sensor__orbit {
+  background: conic-gradient(from 20deg, transparent 8%, #e9faffc9 20%, transparent 33%, transparent 57%, color-mix(in srgb, var(--ring-accent) 75%, white) 70%, transparent 84%);
+  mask: radial-gradient(circle closest-side, transparent calc(100% - 2px), #000 calc(100% - 1px), #000 100%);
+  animation: optical-orbit 18s linear infinite;
+}
+.sensor__well {
+  inset: 18% !important;
+  border: 1px solid #dcf1ff26;
+  background: radial-gradient(circle at 30% 20%, #e5f5ff12, transparent 65%);
+  box-shadow: inset 0 0 25px color-mix(in srgb, var(--ring-accent) 8%, transparent);
+}
+.sensor__icon { position: relative; width: 32%; height: 32%; display: grid; place-items: center; color: #d4ecff; }
+.sensor__icon:has(.sensor-name) { width: auto; height: auto; }
+.sensor__icon:has(.glass-card) { width: 53%; height: 34%; filter: none; }
+@keyframes optical-wave {
+  0% { transform: scale(.63); opacity: 0; }
+  18% { opacity: .6; }
+  58% { opacity: .27; }
+  100% { transform: scale(1.62); opacity: 0; }
+}
+@keyframes optical-orbit { to { transform: rotate(360deg); } }
+@keyframes aura-breathe { from { opacity: .4; transform: scale(.96); } to { opacity: .9; transform: scale(1.04); } }
 
-.sensor__pulse {
-  width: var(--d); height: var(--d);
-  border-radius: 50%;
-  border: 2px solid var(--ring-accent, var(--accent));
-  opacity: 0;
-  animation: sensor-pulse 2.6s ease-out infinite;
+/* Transparent invitation: a translucent face with a travelling bevel reflection. */
+.glass-card {
+  position: relative; display: block; width: 100%; height: 100%; border-radius: 10px;
+  transform: rotate(-12deg); color: #335f9a;
+  background: linear-gradient(135deg, #ffffff52, #d9ecff0d 48%, #91bbec26);
+  border: 1px solid #ffffffa6;
+  box-shadow: inset 0 0 0 1px #6596c529, inset 0 1px 8px #ffffff66, 4px 12px 24px #325e921c;
 }
-/* 有卡片在讀卡機上 → 收起吸引用的漣漪。用 visibility 不用卸載或 display:none:
-   兩者都會中止動畫,回到待機時重新起跑就會跟標題的 prompt-glow 失去相位。 */
-.sensor--locked .sensor__pulse { visibility: hidden; }
+.glass-card__surface { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; }
+.glass-card__surface::after {
+  content: ''; position: absolute; inset: -80%;
+  background: linear-gradient(110deg, transparent 40%, #ffffff08 45%, #ffffff80 50%, #ffffff0d 55%, transparent 60%);
+  animation: glass-sweep 6s ease-in-out infinite;
+}
+.glass-card__edge {
+  position: absolute; inset: -1px; padding: 1.5px; border-radius: inherit;
+  background: linear-gradient(115deg, transparent 30%, #ffffff 46%, #ffffff 50%, #a4d4ff 54%, transparent 70%);
+  background-size: 300% 100%;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: glass-edge 6s ease-in-out infinite;
+}
+.glass-card__brand { position: absolute; top: 22%; left: 13%; font-family: var(--font-display); font-size: clamp(16px, 2.4vh, 25px); letter-spacing: .13em; font-weight: 500; opacity: .8; }
+.glass-card__caption { position: absolute; left: 14%; bottom: 21%; font-size: clamp(6px, .8vh, 9px); letter-spacing: .24em; opacity: .6; }
+.glass-card__nfc { position: absolute; width: 15%; right: 10%; bottom: 19%; opacity: .65; }
+@keyframes glass-sweep { 0%, 15% { transform: translateX(-50%); } 70%, 100% { transform: translateX(50%); } }
+@keyframes glass-edge { 0%, 15% { background-position: 150% 0; } 70%, 100% { background-position: -50% 0; } }
 
-.sensor__pulse:nth-of-type(2) { animation-delay: 0.86s; }
-.sensor__pulse:nth-of-type(3) { animation-delay: 1.72s; }
-@keyframes sensor-pulse {
-  0%   { transform: scale(0.55); opacity: 0.55; }
-  100% { transform: scale(1.5);  opacity: 0; }
-}
-
-.sensor__ring {
-  border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, var(--ring-accent, var(--accent)) 55%, transparent);
-}
-.sensor__ring--outer {
-  width: var(--d); height: var(--d);
-  box-shadow:
-    0 0 60px color-mix(in srgb, var(--ring-accent, var(--accent)) 30%, transparent),
-    inset 0 0 50px color-mix(in srgb, var(--ring-accent, var(--accent)) 14%, transparent);
-}
-.sensor__ring--inner {
-  width: calc(var(--d) * 0.6);
-  height: calc(var(--d) * 0.6);
-  border-color: color-mix(in srgb, var(--ring-accent, var(--accent)) 75%, transparent);
-}
-
-/* ── 1-5 情境頁:白線沿圓周有深淺變化 ────────────────────────────────────────
-   border-color 吃不了漸層,所以把描邊交給 ::before — conic-gradient 給沿圓周的
-   明暗,再用 mask 切出一圈細環。
-   mask 用 calc(50% - Npx) 而不是純百分比:內圈只有外圈 0.6 倍徑,百分比會讓它的
-   線細掉快一半;用 px 才能兩圈一樣粗。
-   首尾停點同值(0.80),否則 0°/360° 接縫會留一條硬邊。 */
-.stage--scene .sensor__ring {
-  position: relative;
-  border-color: transparent;   /* 保留 1.5px 佔位,顏色交給 ::before */
-}
-.stage--scene .sensor__ring::before {
-  content: '';
-  position: absolute;
-  inset: -1.5px;               /* 絕對定位的包含塊是 padding box,補回 border 寬度才對齊描邊外緣 */
-  border-radius: 50%;
-  background: conic-gradient(from var(--ring-phase, 210deg),
-    rgba(255,255,255,0.80) 0deg,
-    rgba(255,255,255,0.30) 60deg,
-    rgba(255,255,255,0.62) 130deg,
-    rgba(255,255,255,0.18) 200deg,
-    rgba(255,255,255,0.55) 275deg,
-    rgba(255,255,255,0.80) 360deg);
-  /* closest-side 是必要的,不能省。radial-gradient 不指定尺寸時預設 farthest-corner,
-     正方形元素的話那是「半寬 × √2」— 停點的 100% 會落在半徑的 1.414 倍處,描邊帶
-     會被推到圓外、真正該畫線的位置反而空的(外圈就是這樣整條消失的)。
-     指定 closest-side 之後,100% 才等於元素半徑。 */
-  -webkit-mask: radial-gradient(circle closest-side,
-    transparent calc(100% - 1.9px), #000 calc(100% - 1.4px),
-    #000 calc(100% - 0.2px), transparent 100%);
-          mask: radial-gradient(circle closest-side,
-    transparent calc(100% - 1.9px), #000 calc(100% - 1.4px),
-    #000 calc(100% - 0.2px), transparent 100%);
-  pointer-events: none;
-}
-/* 內圈錯開相位,兩圈的亮處不要落在同一邊 */
-.stage--scene .sensor__ring--inner { --ring-phase: 30deg; }
-
-/* rotating conic sweep — the "scanning" motion.
-   這是置卡頁的原始幾何:帶外緣停在半徑 0.451D,外圈在 0.5D,掃描帶是懸空的。 */
-.sensor__sweep {
-  width: calc(var(--d) * 0.92);
-  height: calc(var(--d) * 0.92);
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    color-mix(in srgb, var(--ring-accent, var(--accent)) 42%, transparent) 60deg,
-    transparent 120deg,
-    transparent 360deg);
-  mask: radial-gradient(circle, transparent 38%, #000 39%, #000 49%, transparent 50%);
-  -webkit-mask: radial-gradient(circle, transparent 38%, #000 39%, #000 49%, transparent 50%);
-  animation: sensor-sweep 4s linear infinite;
-}
-/* 置卡頁以外:掃描帶外移壓在外圈那條線上。尺寸得取滿 --d — 0.92D 的元素半徑只有
-   0.46D,搆不到外圈的 0.5D,光調遮罩百分比是推不過去的。帶寬維持約 0.09D。 */
-.stage:not(.stage--place-card) .sensor__sweep {
-  width: var(--d);
-  height: var(--d);
-  /* 同樣要 closest-side — 之前沿用預設的 farthest-corner,49.4% 實際落在半徑
-     125.8px 而不是 178px,所以「貼齊外圈」其實沒發生,只往外挪了 11px。 */
-  mask: radial-gradient(circle closest-side,
-    transparent 81%, #000 82.2%, #000 99.5%, transparent 100%);
-  -webkit-mask: radial-gradient(circle closest-side,
-    transparent 81%, #000 82.2%, #000 99.5%, transparent 100%);
-}
-@keyframes sensor-sweep { to { transform: rotate(360deg); } }
-
-.sensor__core {
-  width: calc(var(--d) * 0.6);
-  height: calc(var(--d) * 0.6);
-  border-radius: 50%;
-  background: radial-gradient(circle,
-    color-mix(in srgb, var(--ring-accent, var(--accent)) 22%, transparent) 0%,
-    transparent 70%);
-}
-
-.sensor__icon {
-  width: calc(var(--d) * 0.3);
-  height: calc(var(--d) * 0.3);
-  color: color-mix(in srgb, var(--ring-accent, var(--accent)) 50%, #fff);
-  display: grid;
-  place-items: center;
-  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--ring-accent, var(--accent)) 60%, transparent));
-}
-/* When the ring holds the persona NAME (wider than the 0.3d glyph box), size the
-   box to its content — otherwise an oversized grid item aligns to start and the
-   name drifts right of the true ring centre. */
-/* filter: none — 環內放角色名時不發光。這個 wrapper 的 drop-shadow 是給置卡 /
-   鑰匙圈圖示用的,不關掉的話光暈會落在字上。 */
-.sensor__icon:has(.sensor-name) { width: auto; height: auto; filter: none; }
-
-/* ── Confirm ripple ──────────────────────────────────────────────────────────── */
-.confirm {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  z-index: 5;
-}
-.confirm__ring {
-  position: absolute;
-  width: clamp(220px, 34vh, 360px);
-  height: clamp(220px, 34vh, 360px);
-  border-radius: 50%;
-  border: 2.5px solid var(--confirm-accent);
-  box-shadow: 0 0 40px var(--confirm-accent);
-  opacity: 0;
-  animation: confirm-ring 1s ease-out forwards;
-}
-.confirm__ring--2 { animation-delay: 0.12s; }
-@keyframes confirm-ring {
-  0%   { transform: scale(0.4); opacity: 0.8; }
-  100% { transform: scale(1.8); opacity: 0; }
-}
-.confirm__check {
-  position: absolute;
-  width: clamp(70px, 11vh, 110px);
-  height: clamp(70px, 11vh, 110px);
-  color: var(--confirm-accent);
-  filter: drop-shadow(0 0 16px var(--confirm-accent));
-  transform: scale(0);
-  animation: confirm-check 1.4s ease-out forwards;
-}
-.confirm__check svg { width: 100%; height: 100%; }
-@keyframes confirm-check {
-  0%   { transform: scale(0);    opacity: 0; }
-  25%  { transform: scale(1.15); opacity: 1; }
-  50%  { transform: scale(1);    opacity: 1; }
-  100% { transform: scale(1);    opacity: 0; }
-}
-
-/* ── Ops status dot ──────────────────────────────────────────────────────────── */
-.statusdot {
-  position: absolute;
-  bottom: 18px;
-  right: 22px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-hud);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  color: var(--c-text-dim);
-  opacity: 0.5;
-  z-index: 10;
-}
-.statusdot__led {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: currentColor;
-}
-.statusdot--live  { color: var(--accent-2); }
-.statusdot--idle  { color: var(--warn); }
-.statusdot--down  { color: var(--down); }
-.statusdot--live .statusdot__led { box-shadow: 0 0 8px currentColor; }
-
-/* ══════════════════════════════════════════════════════════════════════════════
-   TEMP · 感應環部件識別配色 — 只為了溝通時能指名道姓,不是設計稿的一部分。
-   開關在 index.html 的 <html data-debug-parts>,拿掉屬性就整組失效。
-   一律 !important:要蓋過 .stage--scene 那組同權重的規則,也不必在意擺放順序。
-   確定不需要之後,把這一整塊連同 index.html 的屬性一起刪掉。
-
-     紅   #ff2d2d  外圈
-     黃   #ffd400  掃描帶(會轉的那條)
-     藍   #00a2ff  內圈
-     綠   #00e05a  中心核
-     洋紅 #ff00d0  脈動漣漪(往外擴的 3 條)
-     橘   #ff8a00  環內圖示 / 角色名
-   ══════════════════════════════════════════════════════════════════════════════ */
-[data-debug-parts] .sensor__pulse        { border-color: #ff00d0 !important; }
-
-[data-debug-parts] .sensor__ring--outer  { border-color: #ff2d2d !important;
-                                           box-shadow: 0 0 60px rgba(255,45,45,0.35) !important; }
-[data-debug-parts] .sensor__ring--outer::before { background: #ff2d2d !important; }
-
-[data-debug-parts] .sensor__ring--inner  { border-color: #00a2ff !important; }
-[data-debug-parts] .sensor__ring--inner::before { background: #00a2ff !important; }
-
-[data-debug-parts] .sensor__sweep {
-  background: conic-gradient(from 0deg,
-    transparent 0deg, #ffd400 60deg, transparent 120deg, transparent 360deg) !important;
-}
-[data-debug-parts] .sensor__core {
-  background: radial-gradient(circle, rgba(0,224,90,0.55) 0%, transparent 70%) !important;
-}
-[data-debug-parts] .sensor__icon,
-[data-debug-parts] .sensor-name {
-  color: #ff8a00 !important;
-  filter: none !important;
-  text-shadow: none !important;
-}
-
-/* ══════════════════════════════════════════════════════════════════════════════
-   第一頁(置卡)= 白底藍字。色票直接沿用 B-TV 待機頁白版(--idle-bg-1/2/3 那組)。
-   只掛 .stage--place-card — 選角色頁與 1-5 情境頁維持原本的深底。
-   放在檔案最後 → 同權重覆蓋前面的深色設定;要收回只要刪掉這整段。
-   ══════════════════════════════════════════════════════════════════════════════ */
-.stage--place-card {
-  /* 環與圖示在白底上要更飽和才浮得起來(深底版那組藍會被白吃掉) */
-  --accent:     #2f8dfb;
-  --accent-2:   #7cc0ff;
-  --c-text:     #17357a;
+/* Keyring prompt uses the light palette and the same A artwork as the scenes. */
+.stage--place-character {
+  --accent: #2f8dfb;
+  --accent-2: #7cc0ff;
+  --c-text: #17357a;
   --c-text-dim: #6a8cc8;
   color: var(--c-text);
-  background:
-    /* 感應環那側的淡藍暈 — 對應深底版的左偏光暈,維持「光從環那邊來」 */
-    radial-gradient(ellipse 52% 66% at 24% 50%,
-      rgba(150,195,250,0.34) 0%, rgba(150,195,250,0.10) 44%, transparent 72%),
-    /* 左上留白、右下最深的淡藍 */
-    linear-gradient(122deg, #ffffff 0%, #ffffff 26%, #eef5ff 58%, #d7e6fa 100%);
+  background: linear-gradient(#fff 60%, #fafcff);
 }
+.stage--place-character::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, #7ba9df 58%, #fff);
+  mask: url('/backgrounds/exhibition-arcs.svg') center / cover no-repeat;
+  transform: scale(1.2);
+  mask-mode: luminance;
+  opacity: .8;
+}
+.stage--place-character .stage__vignette { display: none; }
 
-/* 格線:深底版是淡藍白線,白底上完全看不見 → 換成淡藍灰 */
-.stage--place-card .stage__vignette {
-  background:
-    linear-gradient(rgba(70,110,180,0.10) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(70,110,180,0.10) 1px, transparent 1px);
+/* Exact background layers from B-TV's welcome screen. */
+.stage--place-card {
+  --accent: #89cff5;
+  --c-text-dim: #89cff5;
+  background: radial-gradient(ellipse at 84% 72%, #123c78 0%, transparent 52%),
+    radial-gradient(ellipse at 15% 15%, #122963 0%, transparent 62%), #081440;
 }
-/* 字色 / 字體這幾條掛在區塊自己(.rblock--card)而不是 .stage--place-card:三個文字
+.stage--place-card::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: url('/backgrounds/exhibition-arcs.svg') center / cover no-repeat;
+  transform: scale(1.2); transform-origin: center;
+}
+.stage--place-card .stage__vignette {
+  background: radial-gradient(ellipse at 50% 44%, #071334a6 0%, #08143b66 30%, transparent 67%);
+  background-size: auto;
+  mask-image: none;
+}
+.rblock--card .rblock__title {
+  color: #e1f4ff;
+  background-image: none;
+  -webkit-text-fill-color: #e1f4ff;
+  text-shadow: 0 2px 20px #020d33b3, 0 0 48px #83d4ff18;
+  animation: none;
+}
+.rblock--card .rblock__eyebrow { color: #89cff5; }
+.rblock--card .rblock__sub { color: #c3dff0; }
+
+/* 字色 / 字體這幾條掛在區塊自己(.rblock--character)而不是 .stage--place-character:三個文字
    區塊是永遠掛載的,掛在 stage 上的話,第一頁在畫面上時連底下沒顯示的第二頁區塊也會
    吃到白底版的字色與字體 —— 切頁的 0.6s 交叉淡出中會看到它先用錯的樣式淡進來再跳掉。
-   背景 / 格線 / 環的覆蓋則相反,那些本來就該跟著 step 走,留在 .stage--place-card。 */
+   背景 / 格線 / 環的覆蓋則相反,那些本來就該跟著 step 走,留在 .stage--place-character。 */
 
 /* 大標:字身換深藍漸層,自體發光換成淡藍灰的厚度陰影 —— 深底版那圈白色外暈
-   鋪在白底上會整個消失,只剩一塊灰糊。脈動照舊(只換 animation-name),
-   所以跟感應環 sensor-pulse 的相位不會跑掉。 */
-.rblock--card .rblock__title {
+   鋪在白底上會整個消失,只剩一塊灰糊。白底版保留同樣的緩慢呼吸節奏。 */
+.rblock--character .rblock__title {
   color: #1b3f8f;   /* fallback:background-clip:text 不支援時的實色 */
   background-image: linear-gradient(to top,
     #1b3f8f 0%, #1b3f8f 34%, #2e59a8 72%, #4a76c4 100%);
@@ -582,31 +424,89 @@ body {
   }
 }
 
-/* 副標的桌面反光:白色在白底上看不見 → 換淡藍 */
-.rblock--card .rblock__sub {
-  -webkit-box-reflect: below -0.46em linear-gradient(
-    rgba(60,105,180,0) 33%, rgba(60,105,180,0.18) 100%);
-}
 
 /* 環內圖示:深底版是「環色混白」,白底上會糊成一片 → 改混深藍,外暈同步收斂 */
-.stage--place-card .sensor__icon {
+.stage--place-character .sensor__icon {
   color: color-mix(in srgb, var(--ring-accent, var(--accent)) 55%, #14357e);
   filter: drop-shadow(0 2px 10px rgba(47,141,251,0.28));
 }
 
-/* 第一頁的字體:比照 B-TV 待機頁 —— 不用 GlowSans Condensed(≈0.9 窄體),
-   改 Chiron Hei HK,字身回到 1:1 正比例。Chiron 只有 400/500/700(見 index.html),
-   沒有 300;沿用深底版的 weight 300 會變成合成假細體,所以照 B-TV 取 500。
-   其餘頁面維持 GlowSans Condensed 不動。 */
-.rblock--card .rblock__eyebrow,
-.rblock--card .rblock__title,
-.rblock--card .rblock__sub {
-  font-family: 'Chiron Hei HK', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif;
+/* Match B-TV's system font across invitation, connection, and role prompts. */
+:is(.rblock--character, .rblock--card) .rblock__eyebrow { font-weight: 400; }
+:is(.rblock--character, .rblock--card) .rblock__title { font-weight: 500; }
+:is(.rblock--character, .rblock--card) .rblock__sub { font-weight: 400; max-width: 18em; }
+
+/* Keep the transparent invitation legible on the swapped dark background. */
+.stage--place-card .glass-card { color: #d4ecff; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .sensor__wave { opacity: .16; transform: scale(calc(.8 + var(--wave-index) * .22)); }
 }
-.rblock--card .rblock__eyebrow { font-weight: 400; }
-.rblock--card .rblock__title   { font-weight: 500; }
-.rblock--card .rblock__sub     { font-weight: 400; }  /* Chiron 400 比 GlowSans 400 厚,不需要補到 500 */
-/* 深底版的 max-width:22ch 是照 GlowSans 的 `0` 字寬換算的,換成 Chiron 之後
-   同樣 22ch 只放得下約 11 個中文字 → 副標會折行掉一個孤字。中文用 em 直接對
-   字數比 ch 準(1em ≈ 1 個全形字)。 */
-.rblock--card .rblock__sub { max-width: 18em; }
+
+/* Invitation acknowledgement: bloom originates above the physical NFC reader. */
+.connection-background,.selection-background {
+  position:absolute;inset:0;pointer-events:none;opacity:0;
+  transition:opacity 3.2s cubic-bezier(.2,.65,.3,1);
+}
+.connection-background {
+  background:radial-gradient(ellipse at 23% 50%,#568fc4 0%,#2b5789 44%,#18335e 100%);
+}
+.connection-background::before,.selection-background::before {
+  content:'';position:absolute;inset:0;
+  mask:url('/backgrounds/exhibition-arcs.svg') center/cover no-repeat;
+  mask-mode:luminance;transform:scale(1.2);background:#b8e6ff;opacity:.85;
+}
+.connection-background--active,.selection-background--active {opacity:1;}
+.selection-background {background:linear-gradient(#fff 60%,#fafcff);transition-duration:.65s;}
+.selection-background::before {background:#b2cdec;}
+.stage--place-character {background:#18335e;}
+.stage--place-character::before {display:none;}
+.stage--connected .stage__vignette {opacity:.25;transition:opacity 3s;}
+.stage--connected::before {opacity:0;transition:opacity 3s;}
+.connection-bloom {position:absolute;inset:0;pointer-events:none;}
+.connection-bloom i {
+  position:absolute;left:23%;top:50%;width:35vmin;height:35vmin;border-radius:50%;
+  background:radial-gradient(circle,transparent 35%,#bdeeff12 55%,#c7f3ff70 66%,#e1fbff99 68%,transparent 73%);
+  box-shadow:0 0 5vmin #92dfff50,inset 0 0 4vmin #b4eaff30;
+  animation:invitation-bloom 3.6s cubic-bezier(.12,.5,.3,1) both;
+}
+.connection-bloom i:nth-child(2) {animation-delay:.3s;}
+.connection-bloom i:nth-child(3) {animation-delay:.7s;}
+@keyframes invitation-bloom {
+  0% {transform:translate(-50%,-50%) scale(.6);opacity:0;}
+  12% {opacity:.95;}
+  100% {transform:translate(-50%,-50%) scale(8);opacity:0;}
+}
+.stage--place-character .sensor__icon {animation:selection-icon-in .65s ease both;}
+@keyframes selection-icon-in {from{opacity:0;}to{opacity:1;}}
+@media(prefers-reduced-motion:reduce){.connection-bloom{display:none;}.connection-background{transition-duration:.3s;}}
+
+/* TV's farewell cue replaces the sensing layout with one centered message. */
+.stage--farewell {background:#fff;}
+.stage--farewell .panels {opacity:0;pointer-events:none;transition:opacity .25s ease;}
+.stage--farewell .stage__vignette {display:none;}
+.table-farewell {
+  position:absolute;inset:0;display:grid;place-items:center;
+  padding:8vw;text-align:center;color:#1b3f8f;
+  animation:selection-icon-in .65s ease both;
+}
+.table-farewell h1 {
+  position:relative;
+  font-family:var(--font-ui);font-size:min(2.5vw,48px);
+  font-weight:500;line-height:1.5;letter-spacing:.08em;white-space:nowrap;
+  text-shadow:0 2px 12px #789bd733;
+}
+
+.table-farewell__background {
+  position:absolute;inset:0;pointer-events:none;
+  background:color-mix(in srgb,#7ba9df 58%,#fff);
+  mask:url('/bg/anlb-key.jpg') center/cover no-repeat;
+  mask-mode:luminance;opacity:.8;
+}
+.table-farewell__logo {
+  position:absolute;bottom:8vh;left:50%;transform:translateX(-50%);
+  width:min(15vw,260px);aspect-ratio:227/46;background:#1b3f8f;
+  mask:url('/icons/anlb.png') center/contain no-repeat;
+
+}
