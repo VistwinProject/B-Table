@@ -15,7 +15,7 @@ export default function RightPanel({ step, persona }) {
     <div className="rpanel">
       <div className={`rblock rblock--card${step === 'place-card' ? ' rblock--active' : ''}`}>
         <div className="rblock__inner">
-          <p className="rblock__eyebrow">感光公寓</p>
+          <p className="rblock__eyebrow">感應光寓</p>
           <h1 className="rblock__title">把邀請卡<br />放在感應區</h1>
           <p className="rblock__sub">開始一場,為你而調的居家體驗。</p>
         </div>
@@ -23,7 +23,7 @@ export default function RightPanel({ step, persona }) {
 
       <div className={`rblock rblock--card${step === 'connected' ? ' rblock--active' : ''}`}>
         <div className="rblock__inner">
-          <p className="rblock__eyebrow">感光公寓</p>
+          <p className="rblock__eyebrow">感應光寓</p>
           <h1 className="rblock__title">已連接智慧系統</h1>
           <p className="rblock__sub">感受房子，如何照顧你的生活。</p>
         </div>
