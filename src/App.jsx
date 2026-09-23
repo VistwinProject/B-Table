@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef, useCallback } from 'react'
 import { PERSONAS, PERSONA_ORDER } from './personas.js'
+import { createBrowserSync, isBrowserPreview } from './browserSync.js'
 import { initial, reducer, deriveStep } from './session.js'
 import SensorRing from './components/SensorRing.jsx'
 import RightPanel from './components/RightPanel.jsx'
@@ -13,10 +14,12 @@ import { CardIcon, KeyringIcon } from './components/icons.jsx'
 // VITE_WS_URL only for special setups (e.g. a remote daemon).
 const WS_URL       = import.meta.env.VITE_WS_URL || 'ws://localhost:8788'
 const RECONNECT_MS = 3000
+const browserPreview = isBrowserPreview(window.location)
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initial)
   const wsRef    = useRef(null)
+  const previewRef = useRef(null)
   const timerRef = useRef(null)
 
   // Single ingress for both the real socket and the dev simulator.
@@ -26,6 +29,7 @@ export default function App() {
       case 'reader-disconnected': dispatch({ type: 'reader-disconnected' }); break
       case 'tag-present':         dispatch({ type: 'tag-present', data: msg.data, flowId: msg.flowId }); break
       case 'tag-remove':          dispatch({ type: 'tag-remove' }); break
+      case 'intro':               dispatch(msg); break
       case 'outro':               dispatch(msg); break
       case 'tv-phase':            dispatch(msg); break
       case 'reset':               dispatch({ type: 'reset' }); break
@@ -35,6 +39,11 @@ export default function App() {
 
   // ── WebSocket ───────────────────────────────────────────────────────────────
   useEffect(() => {
+    if (browserPreview) {
+      const preview = createBrowserSync(ingest)
+      previewRef.current = preview
+      return () => { preview.close(); previewRef.current = null }
+    }
     let alive = true
     const connect = () => {
       // WebSocket 建構式會「同步 throw」的情境:https 頁面連 ws:// 被擋成 mixed
@@ -70,11 +79,13 @@ export default function App() {
   //   tag-present/tag-remove/reset 並原樣 broadcast)。
   useEffect(() => {
     const relay = (msg) => {
+      if (previewRef.current) { previewRef.current.send(msg); return }
       const ws = wsRef.current
       if (ws && ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify(msg)) } catch { ingest(msg) } }
       else ingest(msg)
     }
     const onKey = (e) => {
+      if (e.repeat || e.target.isContentEditable || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return
       if (e.key === 'c' || e.key === 'C') relay({ type: 'tag-present', data: { id: 'invite', kind: 'card' } })
       else if (e.key >= '1' && e.key <= '5') {
         const id = PERSONA_ORDER[Number(e.key) - 1]

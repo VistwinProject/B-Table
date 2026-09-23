@@ -192,3 +192,7 @@ server/
 ### 邀請卡連動過場
 
 邀請卡感應後，table 顯示「已連接智慧系統」，感應區向外發光，A 字背景在約 3.2 秒內漸變淺藍。TV 同時播放資訊牆語音；語音結束後 TV 淡入角色選擇，透過 `tv-phase` 通知 table 同步淡入角色鑰匙圈提示。移開邀請卡不會提前切頁。每次邀請使用 bridge 的 `flowId`，過期播放通知不會干擾新流程。瀏覽器若阻擋自動播放，先點 TV 的「播放資訊牆語音」解鎖。
+
+### 線上雙畫面預覽
+
+在同一瀏覽器、同一使用者設定檔開啟 https://vistwinproject.github.io/B-Table/ 與 https://vistwinproject.github.io/B-TV/ 。HTTPS 預覽透過同源 BroadcastChannel 同步，不需要 NFC reader 或本機 WebSocket。按 C 感應邀請卡、1–5 選角色、O 結語、R 重置、X 移開卡片。TV 語音結束後會回傳角色選擇與結尾頁訊號。瀏覽器若阻擋語音自動播放，先在 TV 點播放按鈕。不能跨不同瀏覽器、無痕／一般視窗或不同電腦同步。重新整理會接續最近頁面（語音從頭播放）；R 可清除預覽流程。本機 HTTP 展示仍使用 NFC bridge。

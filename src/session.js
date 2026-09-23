@@ -41,6 +41,9 @@ export function reducer(state, action) {
       return state // unknown / unregistered tag — ignore on the guide
     }
 
+    case 'intro':
+      return { ...state, cardScanned: true, choosing: true, farewell: false, character: null, flowId: action.flowId }
+
     case 'outro':
       return { ...state, flowId: action.flowId }
 
