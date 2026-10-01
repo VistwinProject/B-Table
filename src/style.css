@@ -385,49 +385,19 @@ body {
   background-size: auto;
   mask-image: none;
 }
-.rblock--card .rblock__title {
+:is(.rblock--card, .rblock--character) .rblock__title {
   color: #e1f4ff;
   background-image: none;
   -webkit-text-fill-color: #e1f4ff;
   text-shadow: 0 2px 20px #020d33b3, 0 0 48px #83d4ff18;
   animation: none;
 }
-.rblock--card .rblock__eyebrow { color: #89cff5; }
-.rblock--card .rblock__sub { color: #c3dff0; }
+:is(.rblock--card, .rblock--character) .rblock__eyebrow { color: #89cff5; }
+:is(.rblock--card, .rblock--character) .rblock__sub { color: #c3dff0; }
 
-/* 字色 / 字體這幾條掛在區塊自己(.rblock--character)而不是 .stage--place-character:三個文字
-   區塊是永遠掛載的,掛在 stage 上的話,第一頁在畫面上時連底下沒顯示的第二頁區塊也會
-   吃到白底版的字色與字體 —— 切頁的 0.6s 交叉淡出中會看到它先用錯的樣式淡進來再跳掉。
-   背景 / 格線 / 環的覆蓋則相反,那些本來就該跟著 step 走,留在 .stage--place-character。 */
-
-/* 大標:字身換深藍漸層,自體發光換成淡藍灰的厚度陰影 —— 深底版那圈白色外暈
-   鋪在白底上會整個消失,只剩一塊灰糊。白底版保留同樣的緩慢呼吸節奏。 */
-.rblock--character .rblock__title {
-  color: #1b3f8f;   /* fallback:background-clip:text 不支援時的實色 */
-  background-image: linear-gradient(to top,
-    #1b3f8f 0%, #1b3f8f 34%, #2e59a8 72%, #4a76c4 100%);
-  animation-name: prompt-glow-light;
-}
-/* 層數要與 prompt-glow 對齊(用 0 alpha 而不是省略),否則 text-shadow 無法內插。 */
-@keyframes prompt-glow-light {
-  0%, 100% {
-    text-shadow:
-      0 2px  8px rgba(120,155,215,0.20),
-      0 6px 20px rgba(110,145,205,0.16),
-      0 14px 38px rgba(105,140,200,0.10);
-  }
-  78% {
-    text-shadow:
-      0 2px 10px rgba(120,155,215,0.34),
-      0 8px 28px rgba(110,145,205,0.26),
-      0 18px 52px rgba(105,140,200,0.18);
-  }
-}
-
-
-/* 環內圖示:深底版是「環色混白」,白底上會糊成一片 → 改混深藍,外暈同步收斂 */
+/* White keyring icon on the blue role-selection background. */
 .stage--place-character .sensor__icon {
-  color: color-mix(in srgb, var(--ring-accent, var(--accent)) 55%, #14357e);
+  color: #fff;
   filter: drop-shadow(0 2px 10px rgba(47,141,251,0.28));
 }
 
@@ -449,7 +419,7 @@ body {
   position:absolute;inset:0;pointer-events:none;opacity:0;
   transition:opacity 3.2s cubic-bezier(.2,.65,.3,1);
 }
-.connection-background {
+.connection-background,.selection-background {
   background:radial-gradient(ellipse at 23% 50%,#568fc4 0%,#2b5789 44%,#18335e 100%);
 }
 .connection-background::before,.selection-background::before {
@@ -458,8 +428,7 @@ body {
   mask-mode:luminance;transform:scale(1.2);background:#b8e6ff;opacity:.85;
 }
 .connection-background--active,.selection-background--active {opacity:1;}
-.selection-background {background:linear-gradient(#fff 60%,#fafcff);transition-duration:.65s;}
-.selection-background::before {background:#b2cdec;}
+.selection-background {transition-duration:.65s;}
 .stage--place-character {background:#18335e;}
 .stage--place-character::before {display:none;}
 .stage--connected .stage__vignette {opacity:.25;transition:opacity 3s;}
