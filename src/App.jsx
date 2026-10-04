@@ -1,4 +1,5 @@
-import { useEffect, useReducer, useRef, useCallback } from 'react'
+import { useEffect, useReducer, useRef, useCallback, useState } from 'react'
+import { useDisplayReport } from './displayReport.js'
 import { PERSONAS, PERSONA_ORDER } from './personas.js'
 import { createBrowserSync, isBrowserPreview } from './browserSync.js'
 import { initial, reducer, deriveStep } from './session.js'
@@ -21,9 +22,11 @@ export default function App() {
   const wsRef    = useRef(null)
   const previewRef = useRef(null)
   const timerRef = useRef(null)
+  const [command,setCommand] = useState(null)
 
   // Single ingress for both the real socket and the dev simulator.
   const ingest = useCallback((msg) => {
+    if(msg?.reqId && !msg.replay) setCommand(msg)
     switch (msg.type) {
       case 'reader-connected':    dispatch({ type: 'reader-connected' }); break
       case 'reader-disconnected': dispatch({ type: 'reader-disconnected' }); break
@@ -101,6 +104,9 @@ export default function App() {
 
   const step    = deriveStep(state)
   const persona = state.character ? PERSONAS[state.character] : null
+  useDisplayReport(wsRef, {displayId:'table',ready:state.wsStatus==='connected',screen:step,
+    person:state.character,held:state.onReader,activity:step==='place-card'?'idle':'active',
+    completionEvidence:null,visible:document.visibilityState==='visible'}, command)
 
   // Keep the projected target fixed over the reader beneath the table.
   return (
