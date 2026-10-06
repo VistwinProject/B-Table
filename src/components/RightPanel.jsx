@@ -17,7 +17,7 @@ export default function RightPanel({ step, persona }) {
         <div className="rblock__inner">
           <p className="rblock__eyebrow">感應光寓</p>
           <h1 className="rblock__title">把邀請卡<br />放在感應區</h1>
-          <p className="rblock__sub">開始一場,為你而調的居家體驗。</p>
+          <p className="rblock__sub">開始一場,因你而設定的居家體驗。</p>
         </div>
       </div>
 
